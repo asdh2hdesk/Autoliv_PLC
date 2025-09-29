@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- PLC Data Tree View -->
+    <record id="view_plc_data_list" model="ir.ui.view">
+        <field name="name">plc.data.list</field>
+        <field name="model">plc.data</field>
+        <field name="arch" type="xml">
+            <list decoration-success="state=='verified'" decoration-warning="state=='printed'" decoration-danger="state=='failed'">
+                <field name="create_date"/>
+                <field name="part_number"/>
+                <field name="barcode"/>
+                <field name="state" widget="badge" decoration-success="state=='verified'" decoration-warning="state=='printed'" decoration-danger="state=='failed'"/>
+                <field name="plc_timestamp"/>
+                <field name="cycle_time"/>
+                <field name="operator_id"/>
+                <field name="station_id"/>
+                <field name="verification_result" widget="boolean"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- PLC Data Form View -->
+    <record id="view_plc_data_form" model="ir.ui.view">
+        <field name="name">plc.data.form</field>
+        <field name="model">plc.data</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,printed,scanned,verified"/>
+                    <button name="action_scan_qr" string="Scan QR Code" type="object" class="btn-primary" modifiers="{'invisible': [('state', 'in', ['verified', 'failed'])]}"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_print_label" string="Print Label" type="object" class="oe_stat_button" icon="fa-print"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="part_number"/>
+                            <field name="barcode"/>
+                            <field name="cycle_time"/>
+                            <field name="plc_timestamp"/>
+                        </group>
+                        <group>
+                            <field name="operator_id"/>
+                            <field name="station_id"/>
+                            <field name="verification_result"/>
+                            <field name="scan_timestamp"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="QR Code">
+                            <group>
+                                <field name="qr_code_data"/>
+                                <field name="qr_code_image" widget="image"/>
+                                <field name="scanned_barcode"/>
+                            </group>
+                            <div class="qr_scanner_container" modifiers="{'invisible': [('state', 'in', ['verified', 'failed'])]}">
+                                <button id="start_qr_scanner" class="btn btn-primary">Start QR Scanner</button>
+                                <div id="qr_reader" style="width: 500px; height: 300px; margin: 20px auto;"></div>
+                                <div id="qr_result"></div>
+                            </div>
+                        </page>
+                        <page string="Measurement Data">
+                            <field name="measurement_data" widget="ace" options="{'mode': 'json'}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+<!--                <div class="oe_chatter">-->
+<!--                    <field name="message_follower_ids"/>-->
+<!--                    <field name="activity_ids"/>-->
+<!--                    <field name="message_ids"/>-->
+<!--                </div>-->
+            </form>
+        </field>
+    </record>
+
+    <!-- PLC Data Search View -->
+    <record id="view_plc_data_search" model="ir.ui.view">
+        <field name="name">plc.data.search</field>
+        <field name="model">plc.data</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="part_number"/>
+                <field name="barcode"/>
+                <field name="operator_id"/>
+                <field name="station_id"/>
+                <filter name="today" string="Today" domain="[('create_date', '>=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="verified" string="Verified" domain="[('state', '=', 'verified')]"/>
+                <filter name="failed" string="Failed" domain="[('state', '=', 'failed')]"/>
+                <group expand="1" string="Group By">
+                    <filter name="group_part" string="Part Number" context="{'group_by': 'part_number'}"/>
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_operator" string="Operator" context="{'group_by': 'operator_id'}"/>
+                    <filter name="group_date" string="Date" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- PLC Data Action -->
+    <record id="action_plc_data" model="ir.actions.act_window">
+        <field name="name">PLC Data Records</field>
+        <field name="res_model">plc.data</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No PLC data records found
+            </p>
+            <p>
+                PLC data will be automatically created when the PLC completes a cycle.
+                Make sure PLC monitoring is started.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_plc_main" name="PLC Integration" sequence="50"/>
+    <menuitem id="menu_plc_data" name="Data Records" parent="menu_plc_main" action="action_plc_data" sequence="10"/>
+</odoo>

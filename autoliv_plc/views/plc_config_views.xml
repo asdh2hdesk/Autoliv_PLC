@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- PLC Config Form View -->
+    <record id="view_plc_config_form" model="ir.ui.view">
+        <field name="name">plc.config.form</field>
+        <field name="model">plc.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_connection" string="Test PLC Connection" type="object" class="btn-primary"/>
+                    <button name="action_start_monitoring" string="Start Monitoring" type="object" class="btn-success"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Basic Configuration">
+                            <field name="name"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="PLC Settings">
+                            <group>
+                                <group string="Connection">
+                                    <field name="plc_ip"/>
+                                    <field name="plc_port"/>
+                                    <field name="unit_id"/>
+                                </group>
+                                <group string="Register Addresses">
+                                    <field name="cycle_complete_address"/>
+                                    <field name="data_ready_address"/>
+                                    <field name="part_number_address"/>
+                                    <field name="measurement_start_address"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Printer Settings">
+                            <group>
+                                <field name="printer_ip"/>
+                                <field name="printer_port"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- PLC Config Tree View -->
+    <record id="view_plc_config_list" model="ir.ui.view">
+        <field name="name">plc.config.list</field>
+        <field name="model">plc.config</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="plc_ip"/>
+                <field name="plc_port"/>
+                <field name="printer_ip"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- PLC Config Action -->
+    <record id="action_plc_config" model="ir.actions.act_window">
+        <field name="name">PLC Configuration</field>
+        <field name="res_model">plc.config</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_plc_config" name="Configuration" parent="menu_plc_main" action="action_plc_config" sequence="20"/>
+</odoo>
