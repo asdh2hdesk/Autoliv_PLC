@@ -15,12 +15,13 @@
         'security/ir.model.access.csv',
         'views/plc_data_views.xml',
         'views/plc_config_views.xml',
+        'views/manual_print.xml',
     ],
     'assets': {
         'web.assets_backend': [
-            'autoliv_plc/static/src/js/qr_scanner.js',
-            'autoliv_plc/static/src/css/plc_integration.css',
-            'autoliv_plc/views/plc_dashboard_templates.xml',
+            # 'autoliv_plc/static/src/js/qr_scanner.js',
+            # 'autoliv_plc/static/src/css/plc_integration.css',
+            # 'autoliv_plc/views/plc_dashboard_templates.xml',
         ],
     },
     'installable': True,
