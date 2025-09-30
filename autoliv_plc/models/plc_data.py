@@ -214,7 +214,7 @@ class PlcCommunicator(models.TransientModel):
                 if client.connect():
                     # Check cycle complete signal
                     result = client.read_holding_registers(
-                        config.cycle_complete_address, 1, unit=config.unit_id
+                        config.cycle_complete_address, 1, slave=config.unit_id
                     )
 
                     if result.registers[0] == 1:  # Cycle complete
@@ -227,7 +227,7 @@ class PlcCommunicator(models.TransientModel):
 
                         # Reset cycle complete flag
                         client.write_register(
-                            config.cycle_complete_address, 0, unit=config.unit_id
+                            config.cycle_complete_address, 0, slave=config.unit_id
                         )
 
                     client.close()
@@ -242,23 +242,23 @@ class PlcCommunicator(models.TransientModel):
         try:
             # Read part number (assuming it's stored as ASCII in holding registers)
             part_result = client.read_holding_registers(
-                config.part_number_address, 10, unit=config.unit_id
+                config.part_number_address, 10, slave=config.unit_id
             )
             part_number = ''.join(chr(reg) for reg in part_result.registers if reg != 0)
 
             # Read measurement data
             measurement_result = client.read_holding_registers(
-                config.measurement_start_address, 20, unit=config.unit_id
+                config.measurement_start_address, 20, slave=config.unit_id
             )
 
             # Read other data (cycle time, operator, station)
-            cycle_time_result = client.read_holding_registers(400, 2, unit=config.unit_id)
+            cycle_time_result = client.read_holding_registers(400, 2, slave=config.unit_id)
             cycle_time = (cycle_time_result.registers[0] << 16 | cycle_time_result.registers[1]) / 100.0
 
-            operator_result = client.read_holding_registers(410, 5, unit=config.unit_id)
+            operator_result = client.read_holding_registers(410, 5, slave=config.unit_id)
             operator_id = ''.join(chr(reg) for reg in operator_result.registers if reg != 0)
 
-            station_result = client.read_holding_registers(420, 5, unit=config.unit_id)
+            station_result = client.read_holding_registers(420, 5, slave=config.unit_id)
             station_id = ''.join(chr(reg) for reg in station_result.registers if reg != 0)
 
             return {

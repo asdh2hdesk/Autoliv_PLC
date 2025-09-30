@@ -10,7 +10,7 @@ class PlcConfig(models.Model):
     _rec_name = 'name'
 
     name = fields.Char('Configuration Name', required=True)
-    plc_ip = fields.Char('PLC IP Address', required=True, default='192.168.0.1')
+    plc_ip = fields.Char('PLC IP Address', required=True, default='192.168.2.140')
     plc_port = fields.Integer('PLC Port', required=True, default=502)
     unit_id = fields.Integer('Unit ID', default=1)
 
@@ -37,22 +37,22 @@ class PlcConfig(models.Model):
 
             client = ModbusTcpClient(self.plc_ip, port=self.plc_port)
             if client.connect():
-                # Try to read a register
-                result = client.read_holding_registers(0, 1, unit=self.unit_id)
+                # Try to read registers (matching your successful test pattern)
+                result = client.read_holding_registers(address=0, count=10)
                 client.close()
 
                 if not result.isError():
-                    message = "Connection successful!"
+                    message = f"✅ Connected to Mitsubishi FX5U via Modbus/TCP! D0-D9 values: {result.registers}"
                     message_type = 'success'
                 else:
-                    message = f"Connection error: {result}"
+                    message = f"❌ Read D registers failed: {result}"
                     message_type = 'warning'
             else:
-                message = "Cannot connect to PLC"
+                message = "❌ Could not connect to PLC"
                 message_type = 'danger'
 
         except Exception as e:
-            message = f"Connection failed: {str(e)}"
+            message = f"❌ Connection failed: {str(e)}"
             message_type = 'danger'
 
         return {
