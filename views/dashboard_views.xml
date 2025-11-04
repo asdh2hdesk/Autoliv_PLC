@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Scan Template -->
+        <template id="scan_template" name="QR Code Scanner">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">QR Code Scanner</t>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <h1 class="text-center mb-4">QR Code Scanner</h1>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Scan QR Code</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="scanned-data">Scanned Data:</label>
+                                        <textarea id="scanned-data" class="form-control" rows="5" placeholder="Paste scanned QR code data here..."></textarea>
+                                    </div>
+                                    <button id="process-scan" class="btn btn-primary">Process Scan</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Scan Result</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="scan-result">
+                                        <p class="text-muted">No scan processed yet.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Monitor Template -->
+        <template id="monitor_template" name="Real-time Monitor">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Real-time Monitor</t>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <h1 class="text-center mb-4">Real-time PLC Monitor</h1>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Workstation Status</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="workstation-monitor">
+                                        <!-- Workstation status will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Live Cycle Data</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="live-cycles">
+                                        <!-- Live cycle data will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Print Template -->
+        <template id="print_template" name="Print QR Code">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Print QR Code</t>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <h1 class="text-center mb-4">Print QR Code</h1>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Cycle Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Cycle Number:</strong> <span t-esc="cycle.cycle_number"/></p>
+                                    <p><strong>Part Name:</strong> <span t-esc="cycle.part_name"/></p>
+                                    <p><strong>Barcode:</strong> <span t-esc="cycle.barcode"/></p>
+                                    <p><strong>Torque:</strong> <span t-esc="cycle.torque_nm"/> Nm</p>
+                                    <p><strong>Result:</strong> <span t-esc="cycle.result"/></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>QR Code Data</h5>
+                                </div>
+                                <div class="card-body">
+                                    <pre t-esc="qr_data"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12 text-center">
+                            <button class="btn btn-success btn-lg" onclick="window.print()">Print Label</button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Error Template -->
+        <template id="error_template" name="Error">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Error</t>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                <h4>Error</h4>
+                                <p t-esc="error"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>

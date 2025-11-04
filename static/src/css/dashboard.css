@@ -1,0 +1,443 @@
+/* AutoLiv PLC Dashboard Styles - Backend */
+
+.o_plc_dashboard {
+    padding: 16px;
+    background: #f5f5f5;
+}
+
+.o_dashboard_header {
+    margin-bottom: 24px;
+}
+
+.o_dashboard_header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #4c4c4c;
+    margin: 0;
+}
+
+/* Metrics Cards */
+.o_dashboard_metrics {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.o_metric_card {
+    flex: 1;
+    min-width: 200px;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.o_metric_card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.o_metric_primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.o_metric_success {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.o_metric_danger {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.o_metric_info {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    color: #333;
+}
+
+.o_metric_content h5 {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 12px 0;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.o_metric_value {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Charts */
+.o_dashboard_charts {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.o_chart_container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.o_chart_large {
+    flex: 2;
+}
+
+.o_chart_small {
+    flex: 1;
+    min-width: 300px;
+}
+
+.o_chart_header {
+    padding: 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.o_chart_header h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #4c4c4c;
+}
+
+.o_chart_body {
+    padding: 16px;
+}
+
+.o_panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.o_panel_header {
+    padding: 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.o_panel_header h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #4c4c4c;
+}
+
+.o_panel_body {
+    padding: 0;
+}
+
+.o_clearfix::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Canvas styling */
+#production-chart {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Responsive charts */
+@media (max-width: 768px) {
+    .o_dashboard_charts {
+        flex-direction: column;
+    }
+    
+    .o_chart_container {
+        width: 100%;
+    }
+    
+    .o_dashboard_metrics {
+        flex-direction: column;
+    }
+    
+    .o_metric_card {
+        width: 100%;
+    }
+}
+
+.workstation-status {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.workstation-status.connected {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.workstation-status.disconnected {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+.workstation-status.error {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.status-indicator.connected {
+    background: #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+.status-indicator.disconnected {
+    background: #dc3545;
+}
+
+.status-indicator.error {
+    background: #ffc107;
+}
+
+.recent-cycles-table {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.recent-cycles-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px;
+    font-weight: 600;
+}
+
+.recent-cycles-table td {
+    padding: 15px;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.recent-cycles-table tr:hover {
+    background: #f8f9fa;
+}
+
+.badge-custom {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-ok {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.badge-nok {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.badge-pending {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #333;
+}
+
+.qr-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.qr-status.printed {
+    color: #28a745;
+}
+
+.qr-status.scanned {
+    color: #007bff;
+}
+
+.alert-custom {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #856404;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #fab1a2 100%);
+    color: #721c24;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #74b9ff 100%);
+    color: #0c5460;
+}
+
+.btn-custom {
+    border-radius: 25px;
+    padding: 10px 25px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.btn-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary-custom {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-success-custom {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.btn-danger-custom {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.scan-container {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.scan-result {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.scan-result.success {
+    background: #d4edda;
+    border-left-color: #28a745;
+}
+
+.scan-result.error {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+}
+
+.scan-result.warning {
+    background: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+    }
+    
+    .metric-label {
+        font-size: 1rem;
+    }
+    
+    .recent-cycles-table {
+        font-size: 0.9rem;
+    }
+    
+    .recent-cycles-table th,
+    .recent-cycles-table td {
+        padding: 10px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .dashboard-card {
+        background: rgba(30, 30, 30, 0.95);
+        color: white;
+    }
+    
+    .chart-container {
+        background: #2d2d2d;
+        color: white;
+    }
+    
+    .recent-cycles-table {
+        background: #2d2d2d;
+        color: white;
+    }
+    
+    .recent-cycles-table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .recent-cycles-table tr:hover {
+        background: #3d3d3d;
+    }
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Dashboard Client Action -->
+        <record id="action_plc_dashboard_client" model="ir.actions.client">
+            <field name="name">PLC Dashboard</field>
+            <field name="tag">autoliv_plc.dashboard</field>
+        </record>
+
+        <!-- Scan Action -->
+        <record id="action_plc_scan" model="ir.actions.act_url">
+            <field name="name">QR Code Scanner</field>
+            <field name="url">/plc/scan</field>
+            <field name="target">self</field>
+        </record>
+
+        <!-- Monitor Action -->
+        <record id="action_plc_monitor" model="ir.actions.act_url">
+            <field name="name">Real-time Monitor</field>
+            <field name="url">/plc/monitor</field>
+            <field name="target">self</field>
+        </record>
+        <!-- Main Menu -->
+        <menuitem id="menu_plc_main" name="PLC Integration" sequence="10"/>
+        
+        <!-- Dashboard Menu -->
+        <menuitem id="menu_plc_dashboard" name="Dashboard" parent="menu_plc_main" sequence="10" action="action_plc_dashboard_client"/>
+        
+        <!-- Cycles Menu -->
+        <menuitem id="menu_plc_cycles" name="Cycles" parent="menu_plc_main" sequence="20" action="action_plc_cycle"/>
+        
+        <!-- Configuration Menu -->
+        <menuitem id="menu_plc_config" name="Configuration" parent="menu_plc_main" sequence="30"/>
+        <menuitem id="menu_plc_workstations" name="Workstations" parent="menu_plc_config" sequence="10" action="action_plc_workstation"/>
+        
+        <!-- QR Code Menu -->
+        <menuitem id="menu_plc_qr" name="QR Code" parent="menu_plc_main" sequence="40"/>
+        <menuitem id="menu_plc_qr_scans" name="Scan Logs" parent="menu_plc_qr" sequence="10" action="action_qr_code_log"/>
+        
+    </data>
+</odoo>

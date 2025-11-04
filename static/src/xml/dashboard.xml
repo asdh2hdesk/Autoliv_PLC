@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="autoliv_plc.dashboard_template">
+        <div class="o_plc_dashboard">
+            <t t-if="state.loading">
+                <div class="text-center p-4">
+                    <p>Loading dashboard...</p>
+                </div>
+            </t>
+            <t t-if="!state.loading">
+                <div class="o_dashboard_header">
+                    <h1>AutoLiv PLC Dashboard</h1>
+                    <button class="btn btn-sm btn-primary" t-on-click="onRefresh">Refresh</button>
+                </div>
+
+                <!-- Metrics Cards -->
+                <div class="o_dashboard_metrics o_clearfix">
+                    <div class="o_metric_card o_metric_primary">
+                        <div class="o_metric_content">
+                            <h5>Total Cycles</h5>
+                            <h2 class="o_metric_value">
+                                <t t-esc="state.dashboard_data.total_cycles || 0"/>
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="o_metric_card o_metric_success">
+                        <div class="o_metric_content">
+                            <h5>OK Cycles</h5>
+                            <h2 class="o_metric_value">
+                                <t t-esc="state.dashboard_data.ok_cycles || 0"/>
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="o_metric_card o_metric_danger">
+                        <div class="o_metric_content">
+                            <h5>NOK Cycles</h5>
+                            <h2 class="o_metric_value">
+                                <t t-esc="state.dashboard_data.nok_cycles || 0"/>
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="o_metric_card o_metric_info">
+                        <div class="o_metric_content">
+                            <h5>Quality Rate</h5>
+                            <h2 class="o_metric_value">
+                                <t t-esc="(state.dashboard_data.quality_rate || 0) + '%'"/>
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="o_dashboard_charts o_clearfix">
+                    <div class="o_chart_container o_chart_large">
+                        <div class="o_chart_header">
+                            <h5>Production Trend (Last 24 Hours)</h5>
+                        </div>
+                        <div class="o_chart_body">
+                            <canvas id="production-chart" width="800" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="o_chart_container o_chart_small">
+                        <div class="o_chart_header">
+                            <h5>Workstation Status</h5>
+                        </div>
+                        <div class="o_chart_body">
+                            <div id="workstation-status">
+                                <t t-foreach="state.workstations" t-as="workstation" t-key="workstation.id">
+                                    <div class="workstation-status" t-att-class="workstation.connection_status">
+                                        <div class="status-indicator" t-att-class="workstation.connection_status"></div>
+                                        <div class="workstation-info">
+                                            <strong t-esc="workstation.name"/>
+                                            <small class="text-muted">
+                                                Last: <t t-esc="workstation.last_connection ? new Date(workstation.last_connection).toLocaleTimeString() : 'Never'"/>
+                                                | Cycles: <t t-esc="workstation.cycle_count || 0"/>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Cycles -->
+                <div class="o_dashboard_recent">
+                    <div class="o_panel">
+                        <div class="o_panel_header">
+                            <h5>Recent Cycles</h5>
+                        </div>
+                        <div class="o_panel_body">
+                            <table class="o_list_table table">
+                                <thead>
+                                    <tr>
+                                        <th>Cycle #</th>
+                                        <th>Part</th>
+                                        <th>Barcode</th>
+                                        <th>Time</th>
+                                        <th>Result</th>
+                                        <th>QR Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.recent_cycles" t-as="cycle" t-key="cycle.id">
+                                        <tr>
+                                            <td t-esc="cycle.cycle_number || ''"/>
+                                            <td t-esc="cycle.part_name || ''"/>
+                                            <td t-esc="cycle.barcode || ''"/>
+                                            <td>
+                                                <t t-if="cycle.cycle_datetime">
+                                                    <t t-esc="new Date(cycle.cycle_datetime).toLocaleTimeString()"/>
+                                                </t>
+                                            </td>
+                                            <td>
+                                                <span t-att-class="cycle.result === 'ok' ? 'badge-custom badge-ok' : cycle.result === 'nok' ? 'badge-custom badge-nok' : 'badge-custom badge-pending'">
+                                                    <t t-esc="(cycle.result || '').toUpperCase()"/>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <t t-if="cycle.qr_printed and cycle.qr_scanned">
+                                                    <span class="qr-status printed">✓ Printed</span>
+                                                    <span class="qr-status scanned">✓ Scanned</span>
+                                                </t>
+                                                <t t-elif="cycle.qr_printed">
+                                                    <span class="qr-status printed">✓ Printed</span>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="text-muted">Not printed</span>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>
