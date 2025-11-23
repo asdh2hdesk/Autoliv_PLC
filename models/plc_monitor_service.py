@@ -206,12 +206,27 @@ class PLCMonitorService:
                             
                             # Monitor cycle_ok_bit (M221 or M2000 - configured in workstation)
                             # When cycle_ok_bit turns ON, read D registers and create cycle
+                            # Fallback: If M2000 is not accessible, use M222 (cycle_complete) as alternative
                             current_cycle_ok = cycle_state.get('cycle_ok', False)
+                            current_cycle_complete = cycle_state.get('cycle_complete', False)
                             last_cycle_ok = last_state.get('cycle_ok')
+                            last_cycle_complete = last_state.get('cycle_complete')
+                            
+                            # Check if M2000 is not accessible (always False due to read error)
+                            # If cycle_ok_bit is M2000 and always False, but cycle_complete is readable, use fallback
+                            use_fallback = False
+                            if workstation.cycle_ok_bit == 2000:
+                                # M2000 might not be accessible - check if we should use M222 as fallback
+                                # Use fallback if: cycle_complete is ON and cycle_ok is False (likely due to read error)
+                                if current_cycle_complete and not current_cycle_ok:
+                                    use_fallback = True
+                                    _logger.warning(f"[MONITOR] ⚠️ Workstation {workstation_id}: M2000 not accessible, using M222 (cycle_complete) as fallback for cycle detection")
                             
                             # Log cycle_ok status (every read for cycle_ok_bit to catch it quickly)
                             if current_cycle_ok:
                                 _logger.info(f"[MONITOR] ⚠️ Workstation {workstation_id}: cycle_ok_bit (M{workstation.cycle_ok_bit}) is ON!")
+                            elif use_fallback and current_cycle_complete:
+                                _logger.info(f"[MONITOR] ⚠️ Workstation {workstation_id}: Using M222 (cycle_complete) as cycle OK indicator (M2000 not accessible)")
                             
                             # Log full cycle_state for debugging (less frequently)
                             if int(time.time()) % 30 == 0:
@@ -220,10 +235,13 @@ class PLCMonitorService:
                             
                             # If last_state is None (first read), initialize it and skip cycle creation
                             # This prevents creating a cycle if cycle_ok_bit is already ON when monitoring starts
-                            if last_cycle_ok is None:
+                            if last_cycle_ok is None or last_cycle_complete is None:
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
-                                _logger.info(f"[MONITOR] Initializing monitoring for workstation {workstation_id}: M{cycle_ok_bit_num}={current_cycle_ok}")
-                                self.last_states[workstation_id] = {'cycle_ok': current_cycle_ok}
+                                _logger.info(f"[MONITOR] Initializing monitoring for workstation {workstation_id}: M{cycle_ok_bit_num}={current_cycle_ok}, M222={current_cycle_complete}")
+                                self.last_states[workstation_id] = {
+                                    'cycle_ok': current_cycle_ok,
+                                    'cycle_complete': current_cycle_complete
+                                }
                                 # Skip cycle creation on first read
                                 cr.commit()
                                 time.sleep(scan_interval)
@@ -236,18 +254,29 @@ class PLCMonitorService:
                             
                             # Detect rising edge on cycle_ok_bit (M221 or M2000 - configured in workstation)
                             # M2000 is a 5-second hold bit, so it stays ON longer for reliable detection
-                            # Trigger if cycle_ok_bit is ON and was OFF (rising edge)
-                            # Use truthy check to handle both True and truthy values
+                            # Fallback: If M2000 not accessible, use M222 (cycle_complete) rising edge
+                            # Trigger if cycle_ok_bit is ON and was OFF (rising edge), OR if using fallback and cycle_complete is ON
                             rising_edge_detected = False
-                            if current_cycle_ok and not last_cycle_ok:
+                            trigger_reason = ""
+                            
+                            if use_fallback:
+                                # Use cycle_complete as fallback when M2000 is not accessible
+                                if current_cycle_complete and (last_cycle_complete is None or not last_cycle_complete):
+                                    rising_edge_detected = True
+                                    trigger_reason = "M222 (cycle_complete) - M2000 not accessible"
+                                    _logger.info(f"[MONITOR] Rising edge detected on M222 (fallback): current={current_cycle_complete}, last={last_cycle_complete}")
+                            elif current_cycle_ok and not last_cycle_ok:
                                 rising_edge_detected = True
+                                trigger_reason = f"M{workstation.cycle_ok_bit} (cycle_ok_bit)"
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
                                 _logger.info(f"[MONITOR] Rising edge detected: current_cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)}), last_cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)})")
                             
                             if rising_edge_detected:
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
-                                _logger.info(f"[CYCLE EVENT] ⚡ M{cycle_ok_bit_num} (Cycle OK) RISING EDGE detected for workstation {workstation_id}")
-                                if cycle_ok_bit_num == 2000:
+                                _logger.info(f"[CYCLE EVENT] ⚡ {trigger_reason} RISING EDGE detected for workstation {workstation_id}")
+                                if use_fallback:
+                                    _logger.info(f"[CYCLE EVENT] Using M222 (cycle_complete) as cycle OK indicator - creating cycle record...")
+                                elif cycle_ok_bit_num == 2000:
                                     _logger.info(f"[CYCLE EVENT] M2000 (5-second hold bit) detected - creating cycle record...")
                                 _logger.info(f"[CYCLE EVENT] Last state: cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)}), Current state: cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)})")
                                 _logger.info(f"[CYCLE EVENT] Reading D registers and creating cycle...")
@@ -307,9 +336,12 @@ class PLCMonitorService:
                                 else:
                                     _logger.info(f"[BIT CHANGE] ⬇️ Workstation {workstation_id}: Cycle OK (M{cycle_ok_bit_num}) changed: ON -> OFF")
                             
-                            # Update last state AFTER processing (only store cycle_ok for simplicity)
+                            # Update last state AFTER processing
                             # This ensures we capture the state change correctly
-                            self.last_states[workstation_id] = {'cycle_ok': bool(current_cycle_ok)}  # Ensure it's a boolean
+                            self.last_states[workstation_id] = {
+                                'cycle_ok': bool(current_cycle_ok),
+                                'cycle_complete': bool(current_cycle_complete)
+                            }
                             
                             # If cycle_ok_bit is ON but was already ON, log occasionally
                             if current_cycle_ok and last_cycle_ok:
