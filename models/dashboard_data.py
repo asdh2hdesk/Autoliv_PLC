@@ -78,6 +78,48 @@ class DashboardData(models.Model):
             'avg_cycle_time': round(avg_cycle_time, 2),
             'avg_torque': round(avg_torque, 2),
         }
+    
+    @api.model
+    def get_recent_scans(self, limit=10):
+        """Get recent scan verification results for dashboard"""
+        scans = self.env['qr.code.log'].search([
+            ('scan_datetime', '!=', False)
+        ], order='scan_datetime desc', limit=limit)
+        
+        scan_list = []
+        for scan in scans:
+            scan_list.append({
+                'id': scan.id,
+                'scan_reference': scan.scan_reference,
+                'scanned_data': scan.scanned_data[:32] if scan.scanned_data else '',
+                'scan_datetime': scan.scan_datetime.strftime('%Y-%m-%d %H:%M:%S') if scan.scan_datetime else '',
+                'match_status': scan.match_status,
+                'cycle_number': scan.cycle_id.cycle_number if scan.cycle_id else '',
+                'part_name': scan.cycle_id.part_name if scan.cycle_id else '',
+                'match_message': scan.match_message or '',
+            })
+        
+        return scan_list
+    
+    @api.model
+    def get_last_cycle_info(self):
+        """Get last printed cycle information for scanner verification"""
+        last_cycle = self.env['plc.cycle'].search([
+            ('qr_code_data', '!=', False)
+        ], order='cycle_datetime desc, id desc', limit=1)
+        
+        if not last_cycle:
+            return None
+        
+        return {
+            'cycle_number': last_cycle.cycle_number,
+            'part_name': last_cycle.part_name,
+            'qr_code_data': last_cycle.qr_code_data,
+            'cycle_datetime': last_cycle.cycle_datetime.strftime('%Y-%m-%d %H:%M:%S') if last_cycle.cycle_datetime else '',
+            'qr_code_printed': last_cycle.qr_code_printed,
+            'qr_code_scanned': last_cycle.qr_code_scanned,
+            'qr_match_status': last_cycle.qr_match_status,
+        }
 
     @api.model
     def get_hourly_data(self, date_from=None, date_to=None):
@@ -160,17 +202,22 @@ class DashboardData(models.Model):
         recent_data = []
         for cycle in cycles:
             recent_data.append({
+                'id': cycle.id,
                 'cycle_number': cycle.cycle_number,
                 'part_name': cycle.part_name,
-                'barcode': cycle.barcode,
-                'cycle_datetime': cycle.cycle_datetime,
+                'barcode': cycle.barcode or '',
+                'cycle_datetime': cycle.cycle_datetime.isoformat() if cycle.cycle_datetime else '',
                 'result': cycle.result,
                 'torque_nm': cycle.torque_nm,
+                's1_for': cycle.s1_for,
+                's2_for': cycle.s2_for,
+                'final_position': cycle.final_position,
                 'cycle_time': cycle.cycle_time,
                 'qr_printed': cycle.qr_code_printed,
                 'qr_scanned': cycle.qr_code_scanned,
-                'operator': cycle.operator_id.name,
-                'workstation': cycle.workstation_id.name,
+                'qr_match_status': cycle.qr_match_status,
+                'operator': cycle.operator_id.name if cycle.operator_id else '',
+                'workstation': cycle.workstation_id.name if cycle.workstation_id else '',
             })
         
         return recent_data
@@ -223,3 +270,68 @@ class DashboardData(models.Model):
                 })
         
         return alerts
+    
+    @api.model
+    def get_plc_online_status(self):
+        """Get PLC online status for all workstations"""
+        workstations = self.env['plc.workstation'].search([
+            ('is_active', '=', True)
+        ])
+        
+        status_data = []
+        for workstation in workstations:
+            status_data.append({
+                'id': workstation.id,
+                'name': workstation.name,
+                'code': workstation.code,
+                'plc_ip': workstation.plc_ip,
+                'connection_status': workstation.connection_status,
+                'last_connection': workstation.last_connection.isoformat() if workstation.last_connection else None,
+                'monitoring_active': workstation.monitoring_active,
+                'cycle_count': workstation.cycle_count,
+            })
+        
+        return status_data
+    
+    @api.model
+    def get_qr_match_statistics(self, date_from=None, date_to=None):
+        """Get QR match statistics"""
+        if not date_from:
+            date_from = fields.Datetime.now() - timedelta(days=30)
+        if not date_to:
+            date_to = fields.Datetime.now()
+        
+        # Get cycles with QR codes
+        cycles = self.env['plc.cycle'].search([
+            ('cycle_datetime', '>=', date_from),
+            ('cycle_datetime', '<=', date_to),
+            ('qr_code_data', '!=', False)
+        ])
+        
+        # Get scan logs
+        scans = self.env['qr.code.log'].search([
+            ('scan_datetime', '>=', date_from),
+            ('scan_datetime', '<=', date_to)
+        ])
+        
+        total_cycles_with_qr = len(cycles)
+        qr_printed = len(cycles.filtered(lambda c: c.qr_code_printed))
+        qr_scanned = len(cycles.filtered(lambda c: c.qr_code_scanned))
+        qr_matched = len(cycles.filtered(lambda c: c.qr_match_status == 'matched'))
+        qr_not_matched = len(cycles.filtered(lambda c: c.qr_match_status == 'not_matched'))
+        
+        total_scans = len(scans)
+        matched_scans = len(scans.filtered(lambda s: s.match_status == 'matched'))
+        
+        return {
+            'total_cycles_with_qr': total_cycles_with_qr,
+            'qr_printed': qr_printed,
+            'qr_scanned': qr_scanned,
+            'qr_matched': qr_matched,
+            'qr_not_matched': qr_not_matched,
+            'total_scans': total_scans,
+            'matched_scans': matched_scans,
+            'match_rate': round((matched_scans / total_scans * 100) if total_scans > 0 else 0, 2),
+            'print_rate': round((qr_printed / total_cycles_with_qr * 100) if total_cycles_with_qr > 0 else 0, 2),
+            'scan_rate': round((qr_scanned / total_cycles_with_qr * 100) if total_cycles_with_qr > 0 else 0, 2),
+        }

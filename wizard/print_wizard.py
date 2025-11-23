@@ -122,7 +122,7 @@ class PlcPrintWizard(models.TransientModel):
             raise UserError(_('Error printing QR code: %s') % str(e))
 
     def _generate_zpl_command(self):
-        """Generate ZPL command for Zebra printer"""
+        """Generate ZPL command for Zebra printer (new format: 32-char string)"""
         cycle = self.cycle_id
         
         # Get label dimensions
@@ -141,22 +141,23 @@ class PlcPrintWizard(models.TransientModel):
         width_dots = int(width * 8)  # 203 DPI = 8 dots/mm
         height_dots = int(height * 8)
         
+        # QR code data (32-char string)
+        qr_data = cycle.qr_code_data or ''
+        
         # Generate ZPL command
-        zpl = f"""
-^XA
+        zpl = f"""^XA
 ^PW{width_dots}
 ^LL{height_dots}
-^FO10,10^BY3
+^FO20,20^BY3
 ^BQN,2,3
-^FDQA,{cycle.qr_code_data}^FS
-^FO10,{height_dots-60}^A0N,20,20
+^FDQA,{qr_data}^FS
+^FO20,{height_dots-50}^A0N,20,20
 ^FD{cycle.cycle_number}^FS
-^FO10,{height_dots-40}^A0N,15,15
+^FO20,{height_dots-30}^A0N,15,15
 ^FD{cycle.part_name}^FS
-^FO10,{height_dots-20}^A0N,12,12
-^FD{cycle.barcode}^FS
-^XZ
-"""
+^FO20,{height_dots-10}^A0N,12,12
+^FD{qr_data}^FS
+^XZ"""
         
         return zpl.strip()
 

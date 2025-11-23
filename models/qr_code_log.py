@@ -97,11 +97,19 @@ class QrCodeLog(models.Model):
             if vals.get('scanned_data'):
                 parsed_data = self._parse_scanned_data(vals['scanned_data'])
                 vals.update(parsed_data)
+            
+            # Ensure scan_datetime is set
+            if not vals.get('scan_datetime'):
+                vals['scan_datetime'] = fields.Datetime.now()
         
-        return super(QrCodeLog, self).create(vals_list)
+        records = super(QrCodeLog, self).create(vals_list)
+        _logger.info(f"[QR LOG] Created {len(records)} scan log record(s)")
+        return records
 
     def _parse_scanned_data(self, scanned_data):
-        """Parse scanned QR code data"""
+        """Parse scanned QR code data (new format: 32-char string)"""
+        # New format is a 32-character string, not JSON
+        # Try to parse as JSON first (for backward compatibility)
         try:
             data = json.loads(scanned_data)
             return {
@@ -110,55 +118,83 @@ class QrCodeLog(models.Model):
                 'barcode': data.get('barcode'),
                 'cycle_datetime': data.get('cycle_datetime'),
             }
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
+            # Not JSON, treat as 32-character string format
+            # Store as-is, will be matched directly with qr_code_data
             return {}
 
     def find_matching_cycle(self):
-        """Find matching cycle record"""
+        """Find matching cycle record (new format: match by qr_code_data string)"""
         self.ensure_one()
         
-        if not self.cycle_number and not self.barcode:
+        if not self.scanned_data:
             self.match_status = 'invalid_data'
+            self.match_message = "No scanned data provided"
+            _logger.warning(f"[QR LOG] No scanned data for log ID {self.id}")
             return False
         
-        # Search for matching cycle
-        domain = []
-        if self.cycle_number:
-            domain.append(('cycle_number', '=', self.cycle_number))
-        if self.barcode:
-            domain.append(('barcode', '=', self.barcode))
+        scanned_string = self.scanned_data.strip()
+        _logger.info(f"[QR LOG] Finding match for scanned data: {scanned_string[:32]}... (Log ID: {self.id})")
         
-        if domain:
-            cycle = self.env['plc.cycle'].search(domain, limit=1)
-            if cycle:
-                # Check if already scanned
-                existing_scan = self.env['qr.code.log'].search([
-                    ('cycle_id', '=', cycle.id),
-                    ('match_status', '=', 'matched')
-                ], limit=1)
-                
-                if existing_scan:
-                    self.match_status = 'duplicate'
-                    self.match_message = f"Duplicate scan of cycle {cycle.cycle_number}"
-                    self.notes = f"Duplicate scan of cycle {cycle.cycle_number}"
-                    return False
-                
-                self.cycle_id = cycle.id
-                self.match_status = 'matched'
-                self.match_message = f"Successfully matched with cycle {cycle.cycle_number}"
-                
-                # Update cycle record
-                cycle.qr_code_scanned = True
-                cycle.scan_datetime = self.scan_datetime
-                
-                return True
-            else:
-                self.match_status = 'not_found'
-                self.match_message = "No matching cycle found in database"
+        # Try to find cycle by QR code data (32-char string)
+        cycle = self.env['plc.cycle'].search([
+            ('qr_code_data', '=', scanned_string)
+        ], limit=1)
+        
+        if cycle:
+            _logger.info(f"[QR LOG] Found matching cycle: {cycle.cycle_number} (ID: {cycle.id})")
+            
+            # Check if already scanned
+            existing_scan = self.env['qr.code.log'].search([
+                ('cycle_id', '=', cycle.id),
+                ('match_status', '=', 'matched'),
+                ('id', '!=', self.id)
+            ], limit=1)
+            
+            if existing_scan:
+                self.match_status = 'duplicate'
+                self.match_message = f"Duplicate scan of cycle {cycle.cycle_number}"
+                self.notes = f"Duplicate scan of cycle {cycle.cycle_number}"
+                _logger.warning(f"[QR LOG] Duplicate scan detected for cycle {cycle.cycle_number}")
                 return False
+            
+            self.cycle_id = cycle.id
+            self.match_status = 'matched'
+            self.match_message = f"Successfully matched with cycle {cycle.cycle_number}"
+            
+            # Update cycle record
+            cycle.qr_code_scanned = True
+            cycle.qr_match_status = 'matched'
+            cycle.scan_datetime = self.scan_datetime
+            cycle.qr_scan_datetime = self.scan_datetime
+            
+            _logger.info(f"[QR LOG] ✅ Matched and updated cycle {cycle.cycle_number}")
+            return True
         else:
-            self.match_status = 'invalid_data'
-            self.match_message = "Invalid QR code data format"
+            _logger.warning(f"[QR LOG] No cycle found matching QR code: {scanned_string[:32]}...")
+            
+            # Try old format matching (by cycle_number or barcode) for backward compatibility
+            if self.cycle_number or self.barcode:
+                domain = []
+                if self.cycle_number:
+                    domain.append(('cycle_number', '=', self.cycle_number))
+                if self.barcode:
+                    domain.append(('barcode', '=', self.barcode))
+                
+                if domain:
+                    cycle = self.env['plc.cycle'].search(domain, limit=1)
+                    if cycle:
+                        self.cycle_id = cycle.id
+                        self.match_status = 'matched'
+                        self.match_message = f"Successfully matched with cycle {cycle.cycle_number}"
+                        cycle.qr_code_scanned = True
+                        cycle.scan_datetime = self.scan_datetime
+                        _logger.info(f"[QR LOG] Matched via old format: cycle {cycle.cycle_number}")
+                        return True
+            
+            self.match_status = 'not_found'
+            self.match_message = "No matching cycle found in database"
+            _logger.warning(f"[QR LOG] ❌ No match found for scan log ID {self.id}")
             return False
 
     def action_find_match(self):

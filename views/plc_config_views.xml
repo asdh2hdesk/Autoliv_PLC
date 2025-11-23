@@ -25,10 +25,20 @@
             <field name="name">plc.workstation.form</field>
             <field name="model">plc.workstation</field>
             <field name="arch" type="xml">
-                <form string="PLC Workstation">
+                <form edit="false" string="PLC Workstation">
                     <header>
                         <button name="test_connection" string="Test Connection" type="object" class="btn-primary"/>
                         <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>
+                        <button name="action_force_create_cycle" string="Force Create Cycle (Test)" type="object" class="btn-success"/>
+                        <button name="test_cycle_detection" string="Test Cycle Detection" type="object" class="btn-secondary"/>
+                        <button name="test_d_register_reading" string="Test D Registers" type="object" class="btn-secondary"/>
+                        <button name="test_plc_bit_access" string="Test Bit Access" type="object" class="btn-secondary"/>
+                        <button name="test_m_bit_as_discrete_input" string="Test as Discrete Input" type="object" class="btn-secondary"/>
+                        <button name="find_m221_address" string="Find M221 Address" type="object" class="btn-secondary"/>
+                        <button name="scan_for_active_bits" string="Scan for Active Bits" type="object" class="btn-secondary"/>
+                        <button name="continuous_bit_monitor" string="Continuous Monitor (30s)" type="object" class="btn-secondary"/>
+                        <button name="start_continuous_monitoring" string="Start Monitoring" type="object" class="btn-success" modifiers="{'invisible': [('monitoring_active', '=', True)]}"/>
+                        <button name="stop_continuous_monitoring" string="Stop Monitoring" type="object" class="btn-warning" modifiers="{'invisible': [('monitoring_active', '=', False)]}"/>
                         <field name="connection_status" widget="statusbar" statusbar_visible="connected,disconnected,error"/>
                     </header>
                     <sheet>
@@ -45,15 +55,49 @@
                                 <field name="plc_port"/>
                                 <field name="unit_id"/>
                                 <field name="timeout"/>
+                                <field name="monitoring_active" readonly="1"/>
                             </group>
                             <group>
                                 <field name="last_connection" readonly="1"/>
                                 <field name="cycle_count" readonly="1"/>
                             </group>
                         </group>
+                        <group string="QR Code Configuration">
+                            <group>
+                                <field name="part_no"/>
+                                <field name="revision"/>
+                                <field name="vendor_code"/>
+                            </group>
+                        </group>
+                        <group string="Zebra Printer Configuration">
+                            <group>
+                                <field name="printer_type"/>
+                                <field name="printer_usb_name" modifiers="{'invisible': [('printer_type', '!=', 'usb')], 'required': [('printer_type', '=', 'usb')]}"/>
+                                <field name="printer_ip" modifiers="{'invisible': [('printer_type', '!=', 'network')], 'required': [('printer_type', '=', 'network')]}"/>
+                                <field name="printer_port" modifiers="{'invisible': [('printer_type', '!=', 'network')]}"/>
+                            </group>
+                        </group>
                         <notebook>
                             <page string="Modbus Registers" name="registers">
-                                <group>
+                        <group string="Cycle Status Bits (M bits)">
+                            <group>
+                                <field name="m_bit_read_method"/>
+                                <field name="m_bit_address_offset"/>
+                                <field name="part_presence_bit"/>
+                                <field name="cycle_start_bit"/>
+                                <field name="cycle_complete_bit"/>
+                                <field name="cycle_ok_bit"/>
+                                <field name="cycle_nok_bit"/>
+                            </group>
+                        </group>
+                                <group string="CLUTCH Machine Registers (D registers)">
+                                    <group>
+                                        <field name="s1_for_register"/>
+                                        <field name="s2_for_register"/>
+                                        <field name="final_position_register_clutch"/>
+                                    </group>
+                                </group>
+                                <group string="Legacy Registers">
                                     <group>
                                         <field name="cycle_start_register"/>
                                         <field name="cycle_complete_register"/>

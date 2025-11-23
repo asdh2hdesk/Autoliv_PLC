@@ -13,10 +13,14 @@
                     <field name="barcode"/>
                     <field name="cycle_datetime"/>
                     <field name="torque_nm"/>
+                    <field name="s1_for"/>
+                    <field name="s2_for"/>
+                    <field name="final_position"/>
                     <field name="cycle_time"/>
                     <field name="result" widget="badge"/>
                     <field name="qr_code_printed" widget="boolean_toggle"/>
                     <field name="qr_code_scanned" widget="boolean_toggle"/>
+                    <field name="qr_match_status" widget="badge"/>
                     <field name="operator_id"/>
                     <field name="workstation_id"/>
                 </list>
@@ -28,12 +32,12 @@
             <field name="name">plc.cycle.form</field>
             <field name="model">plc.cycle</field>
             <field name="arch" type="xml">
-                <form string="PLC Cycle">
+                <form edit="false" string="PLC Cycle">
                     <header>
-                        <button name="action_mark_ok" string="Mark OK" type="object" class="btn-primary" modifiers="{'invisible': [('result', '!=', 'pending')]}"/>
-                        <button name="action_mark_nok" string="Mark NOK" type="object" class="btn-secondary" modifiers="{'invisible': [('result', '!=', 'pending')]}"/>
+<!--                        <button name="action_mark_ok" string="Mark OK" type="object" class="btn-primary" modifiers="{'invisible': [('result', '!=', 'pending')]}"/>-->
+<!--                        <button name="action_mark_nok" string="Mark NOK" type="object" class="btn-secondary" modifiers="{'invisible': [('result', '!=', 'pending')]}"/>-->
                         <button name="action_print_qr" string="Print QR Code" type="object" class="btn-info"/>
-                        <button name="action_scan_qr" string="Scan QR Code" type="object" class="btn-warning"/>
+<!--                        <button name="action_scan_qr" string="Scan QR Code" type="object" class="btn-warning"/>-->
                         <field name="result" widget="statusbar" statusbar_visible="ok,nok"/>
                     </header>
                     <sheet>
@@ -56,14 +60,27 @@
                                 <field name="forward_load_after"/>
                                 <field name="final_position"/>
                                 <field name="cycle_time"/>
-                                <field name="cycle_duration"/>
+                            </group>
+                        </group>
+                        <group string="CLUTCH Machine Measurements">
+                            <group>
+                                <field name="zero_position"/>
+                                <field name="s1_for"/>
+                                <field name="s2_for"/>
+<!--                                <field name="s2_rev"/>-->
+<!--                                <field name="s1_rev"/>-->
+                            </group>
+                            <group>
+                                <field name="initial_position_revload"/>
                             </group>
                         </group>
                         <group>
                             <group>
                                 <field name="qr_code_printed" widget="boolean_toggle"/>
                                 <field name="qr_code_scanned" widget="boolean_toggle"/>
+                                <field name="qr_match_status" widget="badge"/>
                                 <field name="scan_datetime" modifiers="{'invisible': [('qr_code_scanned', '=', False)]}"/>
+                                <field name="qr_scan_datetime" modifiers="{'invisible': [('qr_match_status', '=', 'pending')]}"/>
                             </group>
                             <group>
                                 <field name="is_quality_pass" widget="boolean_toggle"/>

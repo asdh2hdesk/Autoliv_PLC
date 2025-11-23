@@ -66,6 +66,53 @@ class PlcCycle(models.Model):
         help="Total cycle time in seconds"
     )
     
+    # CLUTCH Machine Specific Fields
+    zero_position = fields.Float(
+        string='Zero Position',
+        digits=(10, 3),
+        default=0.0,
+        help="Zero position (default: 0)"
+    )
+    s1_for = fields.Float(
+        string='S1_FOR',
+        digits=(10, 3),
+        help="S1 forward measurement from D2704"
+    )
+    s2_for = fields.Float(
+        string='S2_FOR',
+        digits=(10, 3),
+        help="S2 forward measurement from D2708"
+    )
+    s2_rev = fields.Float(
+        string='S2_REV',
+        digits=(10, 3),
+        default=0.0,
+        help="S2 reverse measurement (for future use)"
+    )
+    s1_rev = fields.Float(
+        string='S1_REV',
+        digits=(10, 3),
+        default=0.0,
+        help="S1 reverse measurement (for future use)"
+    )
+    initial_position_revload = fields.Float(
+        string='Initial Position RevLoad',
+        digits=(10, 3),
+        default=0.0,
+        help="Initial position reverse load (for future use)"
+    )
+    
+    # QR Code Match Status
+    qr_match_status = fields.Selection([
+        ('pending', 'Pending'),
+        ('matched', 'Matched'),
+        ('not_matched', 'Not Matched')
+    ], string='QR Match Status', default='pending')
+    qr_scan_datetime = fields.Datetime(
+        string='QR Scan DateTime',
+        help="When the QR code was scanned and matched"
+    )
+    
     # Status and Results
     result = fields.Selection([
         ('ok', 'OK'),
@@ -76,8 +123,14 @@ class PlcCycle(models.Model):
     # QR Code Information
     qr_code_data = fields.Text(
         string='QR Code Data',
-        help="JSON data encoded in QR code"
+        help="32-character QR code string (also stored in barcode field)"
     )
+    
+    @api.onchange('qr_code_data')
+    def _onchange_qr_code_data(self):
+        """Keep barcode in sync with qr_code_data"""
+        if self.qr_code_data:
+            self.barcode = self.qr_code_data
     qr_code_image = fields.Binary(
         string='QR Code Image',
         attachment=True
@@ -107,23 +160,11 @@ class PlcCycle(models.Model):
         help="PLC workstation configuration"
     )
     notes = fields.Text(string='Notes')
-    
-    # Computed Fields
-    cycle_duration = fields.Float(
-        string='Cycle Duration (min)',
-        compute='_compute_cycle_duration',
-        store=True
-    )
     is_quality_pass = fields.Boolean(
         string='Quality Pass',
         compute='_compute_quality_pass',
         store=True
     )
-
-    @api.depends('cycle_time')
-    def _compute_cycle_duration(self):
-        for record in self:
-            record.cycle_duration = record.cycle_time / 60.0 if record.cycle_time else 0.0
 
     @api.depends('result')
     def _compute_quality_pass(self):
@@ -139,22 +180,78 @@ class PlcCycle(models.Model):
         return super(PlcCycle, self).create(vals_list)
 
     def generate_qr_code_data(self):
-        """Generate QR code data as JSON string"""
+        """
+        Generate QR code data in format: Part_no + Revision + Vendor_code + MMYY + Serial_no (32 chars total)
+        Format: {part_no}{revision}{vendor_code}{mfg_date}{serial_no}
+        """
         self.ensure_one()
-        qr_data = {
+        
+        # Get QR code components from workstation configuration
+        workstation = self.workstation_id
+        if not workstation:
+            raise UserError(_("Workstation is required to generate QR code"))
+        
+        part_no = workstation.part_no or ''
+        revision = workstation.revision or ''
+        vendor_code = workstation.vendor_code or ''
+        
+        # Generate manufacturing date (MMYY format)
+        from datetime import datetime
+        now = datetime.now()
+        mfg_date = now.strftime('%m%y')  # MMYY format
+        
+        # Generate serial number (6 digits) from sequence
+        serial_no = self.env['ir.sequence'].next_by_code('plc.serial.number') or '000001'
+        # Ensure serial number is 6 digits
+        serial_no = serial_no.zfill(6)[:6]
+        
+        # Calculate available length for part_no
+        # Total: 32 chars = part_no + revision(1) + vendor_code + mfg_date(4) + serial_no(6)
+        # So: part_no + vendor_code = 32 - 1 - 4 - 6 = 21 chars
+        # We'll pad/truncate as needed
+        
+        # Build QR code string
+        # Format: Part_no + Revision + Vendor_code + MMYY + Serial_no
+        qr_string = f"{part_no}{revision}{vendor_code}{mfg_date}{serial_no}"
+        
+        # Ensure total length is exactly 32 characters
+        if len(qr_string) > 32:
+            # Truncate part_no if needed
+            available_for_part = 32 - len(revision) - len(vendor_code) - 4 - 6
+            if available_for_part > 0:
+                part_no = part_no[:available_for_part]
+                qr_string = f"{part_no}{revision}{vendor_code}{mfg_date}{serial_no}"
+            else:
+                # If still too long, truncate from the end
+                qr_string = qr_string[:32]
+        elif len(qr_string) < 32:
+            # Pad with zeros at the end (or pad part_no)
+            padding_needed = 32 - len(qr_string)
+            qr_string = qr_string + '0' * padding_needed
+        
+        # Store both the formatted string and JSON data
+        # QR code data IS the barcode - they are the same
+        self.qr_code_data = qr_string
+        self.barcode = qr_string  # Always keep barcode in sync with qr_code_data
+        
+        # Also store detailed data as JSON for reference
+        qr_data_json = {
+            'qr_code': qr_string,
+            'part_no': part_no,
+            'revision': revision,
+            'vendor_code': vendor_code,
+            'mfg_date': mfg_date,
+            'serial_no': serial_no,
             'cycle_number': self.cycle_number,
             'part_name': self.part_name,
             'barcode': self.barcode,
-            'cycle_datetime': self.cycle_datetime.isoformat(),
-            'torque_nm': self.torque_nm,
-            'initial_position': self.initial_position,
-            'forward_load_after': self.forward_load_after,
-            'final_position': self.final_position,
-            'cycle_time': self.cycle_time,
-            'result': self.result,
-            'operator': self.operator_id.name,
+            'cycle_datetime': self.cycle_datetime.isoformat() if self.cycle_datetime else None,
         }
-        self.qr_code_data = json.dumps(qr_data)
+        
+        # Store JSON in a separate field or as metadata
+        # For now, we'll use qr_code_data for the 32-char string
+        # and store JSON separately if needed
+        
         return self.qr_code_data
 
     def generate_qr_code_image(self):
@@ -206,19 +303,240 @@ class PlcCycle(models.Model):
             'target': 'new',
             'context': {'default_cycle_id': self.id}
         }
+    
+    def _auto_print_qr_code(self):
+        """Auto-print QR code to Zebra printer after cycle OK"""
+        self.ensure_one()
+        
+        if not self.qr_code_data:
+            self.generate_qr_code_data()
+        
+        if not self.workstation_id:
+            _logger.warning("No workstation configured for auto-print")
+            return False
+        
+        workstation = self.workstation_id
+        
+        # Get printer type - default to USB if not set
+        printer_type = workstation.printer_type
+        _logger.info(f"[PRINT] Workstation printer_type field value: {repr(printer_type)}")
+        
+        if not printer_type or printer_type not in ['network', 'usb']:
+            # Default to USB if not explicitly set
+            printer_type = 'usb'
+            _logger.warning(f"[PRINT] ⚠️ Printer type not set or invalid ({repr(printer_type)}), defaulting to USB")
+            _logger.warning(f"[PRINT] 💡 Please set 'Printer Type' field to 'USB' in workstation configuration to avoid this warning")
+        else:
+            _logger.info(f"[PRINT] Using configured printer type: {printer_type}")
+        
+        _logger.info(f"[PRINT] Selected printer type: {printer_type} for workstation {workstation.name}")
+        
+        # Generate ZPL command
+        zpl_command = self._generate_zpl_command()
+        
+        if printer_type == 'usb':
+            return self._print_via_usb(zpl_command, workstation)
+        else:
+            return self._print_via_network(zpl_command, workstation)
+    
+    def _print_via_usb(self, zpl_command, workstation):
+        """Print to USB-connected Zebra printer"""
+        try:
+            import platform
+            
+            # Check if running on Windows
+            if platform.system() != 'Windows':
+                _logger.error("USB printing is currently only supported on Windows")
+                return False
+            
+            # Try to import win32print
+            try:
+                import win32print
+                import win32api
+            except ImportError:
+                _logger.error("win32print module not found. Please install pywin32: pip install pywin32")
+                return False
+            
+            printer_name = workstation.printer_usb_name
+            
+            # If printer name not specified, try to find Zebra printer
+            if not printer_name:
+                _logger.info("No printer name specified, attempting to auto-detect Zebra printer...")
+                printers = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)
+                zebra_printers = [p[2] for p in printers if 'zebra' in p[2].lower() or 'zdesigner' in p[2].lower()]
+                
+                if zebra_printers:
+                    printer_name = zebra_printers[0]
+                    _logger.info(f"Auto-detected Zebra printer: {printer_name}")
+                else:
+                    _logger.error("No Zebra printer found. Please specify printer name in workstation configuration.")
+                    return False
+            
+            _logger.info(f"Printing to USB printer: {printer_name}")
+            _logger.info(f"ZPL command length: {len(zpl_command)} bytes")
+            
+            # Open printer
+            try:
+                hprinter = win32print.OpenPrinter(printer_name)
+            except Exception as e:
+                _logger.error(f"Failed to open printer '{printer_name}': {e}")
+                _logger.error(f"Available printers: {[p[2] for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]}")
+                return False
+            
+            try:
+                # Start a print job
+                job_info = ("PLC Cycle QR Code", None, "RAW")
+                job_id = win32print.StartDocPrinter(hprinter, 1, job_info)
+                win32print.StartPagePrinter(hprinter)
+                
+                # Send ZPL command as raw data
+                win32print.WritePrinter(hprinter, zpl_command.encode('utf-8'))
+                
+                # End print job
+                win32print.EndPagePrinter(hprinter)
+                win32print.EndDocPrinter(hprinter)
+                
+                # Mark as printed and save
+                self.qr_code_printed = True
+                self.env.cr.commit()
+                
+                _logger.info(f"✅ QR code auto-printed successfully to USB printer '{printer_name}' for cycle {self.cycle_number}")
+                _logger.info(f"QR Code Data: {self.qr_code_data}")
+                return True
+                
+            finally:
+                win32print.ClosePrinter(hprinter)
+                
+        except Exception as e:
+            _logger.error(f"Error printing to USB printer: {e}", exc_info=True)
+            return False
+    
+    def _print_via_network(self, zpl_command, workstation):
+        """Print to network-connected Zebra printer"""
+        printer_ip = workstation.printer_ip or '192.168.1.100'
+        printer_port = workstation.printer_port or 9100
+        
+        try:
+            import socket
+            
+            # Send to printer
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
+            
+            try:
+                _logger.info(f"Connecting to network printer at {printer_ip}:{printer_port}...")
+                sock.connect((printer_ip, printer_port))
+                _logger.info(f"Connected to printer, sending ZPL command ({len(zpl_command)} bytes)...")
+                sock.send(zpl_command.encode('utf-8'))
+                _logger.info(f"ZPL command sent successfully")
+                
+                # Mark as printed and save
+                self.qr_code_printed = True
+                self.env.cr.commit()  # Commit the flag change
+                _logger.info(f"✅ QR code auto-printed successfully for cycle {self.cycle_number}")
+                _logger.info(f"QR Code Data: {self.qr_code_data}")
+                return True
+            except socket.timeout:
+                _logger.error(f"Timeout connecting to printer at {printer_ip}:{printer_port}")
+                return False
+            except socket.error as e:
+                _logger.error(f"Socket error connecting to printer at {printer_ip}:{printer_port}: {e}")
+                return False
+            finally:
+                try:
+                    sock.close()
+                except:
+                    pass
+                
+        except Exception as e:
+            _logger.error(f"Error auto-printing QR code via network: {e}", exc_info=True)
+            return False
+    
+    def _generate_zpl_command(self):
+        """Generate ZPL command for Zebra printer using the new template format"""
+        # Get QR code components from workstation and cycle
+        workstation = self.workstation_id
+        if not workstation:
+            # Fallback: use cycle data only
+            part_no = ''
+            revision = ''
+            vendor_code = ''
+            mfg_date = ''
+            serial_no = ''
+        else:
+            part_no = workstation.part_no or ''
+            revision = workstation.revision or ''
+            vendor_code = workstation.vendor_code or ''
+            
+            # Get manufacturing date from cycle datetime (MMYY format)
+            if self.cycle_datetime:
+                mfg_date = self.cycle_datetime.strftime('%m%y')
+            else:
+                from datetime import datetime
+                mfg_date = datetime.now().strftime('%m%y')
+            
+            # Extract serial number from QR code data if available
+            # QR format: part_no + revision + vendor_code + mfg_date(4) + serial_no(6)
+            serial_no = ''
+            if self.qr_code_data and len(self.qr_code_data) >= 32:
+                # Serial number is last 6 characters
+                serial_no = self.qr_code_data[-6:]
+            else:
+                # Fallback: use cycle number or generate
+                serial_no = self.cycle_number.replace('CYC', '').zfill(6)[:6] if self.cycle_number else '000001'
+        
+        # QR code data (32-char string)
+        qr_code = self.qr_code_data or ''
+        
+        # Part description (use part_name)
+        part_desc = self.part_name or ''
+        
+        # Build ZPL command using the new template
+        zpl = f"""^XA
+^PW591
+^LL300
+~SD15
+
+^FO50,60
+^BQN,2,5
+^FDLA,{qr_code}^FS
+
+^FO220,35^A0N,32,32^FD{part_no}^FS
+^FO220,68^A0N,32,32^FD{revision}^FS
+^FO220,101^A0N,32,32^FD{vendor_code}^FS
+^FO220,134^A0N,32,32^FD{mfg_date}^FS
+^FO220,167^A0N,32,32^FD{serial_no}^FS
+
+^FO0,210
+^FB591,1,0,C,0
+^A0N,32,32
+^FD{part_desc}^FS
+
+^FO0,250
+^FB591,1,0,C,0
+^A0N,32,32
+^FD AUTOLINE INDUST LTD ^FS
+^XZ"""
+        
+        return zpl.strip()
 
     def scan_qr_code(self, scanned_data):
-        """Process scanned QR code data"""
+        """Process scanned QR code data (new format: 32-char string)"""
         self.ensure_one()
         try:
-            scanned_json = json.loads(scanned_data)
+            # New format: scanned_data is a 32-character string
+            # Compare directly with qr_code_data
+            scanned_string = scanned_data.strip()
             
-            # Verify the scanned data matches this cycle
-            if (scanned_json.get('cycle_number') == self.cycle_number and
-                scanned_json.get('barcode') == self.barcode):
-                
+            if not self.qr_code_data:
+                self.generate_qr_code_data()
+            
+            # Verify the scanned data matches this cycle's QR code
+            if scanned_string == self.qr_code_data:
                 self.qr_code_scanned = True
+                self.qr_match_status = 'matched'
                 self.scan_datetime = fields.Datetime.now()
+                self.qr_scan_datetime = fields.Datetime.now()
                 
                 return {
                     'status': 'success',
@@ -228,18 +546,15 @@ class PlcCycle(models.Model):
                         'part_name': self.part_name,
                         'result': self.result,
                         'torque_nm': self.torque_nm,
+                        'qr_code': self.qr_code_data,
                     }
                 }
             else:
+                self.qr_match_status = 'not_matched'
                 return {
                     'status': 'error',
-                    'message': _('QR Code does not match this cycle!')
+                    'message': _('QR Code does not match this cycle! Expected: %s, Got: %s') % (self.qr_code_data, scanned_string)
                 }
-        except json.JSONDecodeError:
-            return {
-                'status': 'error',
-                'message': _('Invalid QR Code data format!')
-            }
         except Exception as e:
             _logger.error(f"Error processing scanned QR code: {e}")
             return {

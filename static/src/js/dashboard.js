@@ -15,11 +15,17 @@ export class PlcDashboard extends Component {
             dashboard_data: {},
             workstations: [],
             recent_cycles: [],
+            recent_scans: [],
+            last_cycle: null,
             loading: true,
+            scanner_ready: false,
+            scan_result: null,
         });
         
         this.chart = null;
         this.refresh_interval = null;
+        this.scan_buffer = '';
+        this.scan_timeout = null;
 
         onMounted(async () => {
             try {
@@ -27,23 +33,33 @@ export class PlcDashboard extends Component {
                 await this._renderCharts();
                 await this._renderWorkstations();
                 await this._renderRecentCycles();
+                await this._loadRecentScans();
+                await this._loadLastCycle();
                 this.state.loading = false;
             } catch (error) {
                 console.error('Error in dashboard initialization:', error);
                 this.state.loading = false;
             }
             
-            // Auto refresh every 30 seconds
+            // Initialize scanner input
+            this._initScanner();
+            
+            // Auto refresh every 5 seconds for real-time updates
             this.refresh_interval = setInterval(() => {
                 this._loadDashboardData();
                 this._renderWorkstations();
                 this._renderRecentCycles();
-            }, 30000);
+                this._loadRecentScans();
+                this._loadLastCycle();
+            }, 5000);
         });
 
         onWillUnmount(() => {
             if (this.refresh_interval) {
                 clearInterval(this.refresh_interval);
+            }
+            if (this.scan_timeout) {
+                clearTimeout(this.scan_timeout);
             }
             if (this.chart) {
                 this.chart.destroy();
@@ -210,9 +226,14 @@ export class PlcDashboard extends Component {
                 [],
                 ['name', 'connection_status', 'last_connection', 'cycle_count']
             );
-            this.state.workstations = workstations;
+            // Ensure each workstation has an id for the template key
+            this.state.workstations = (workstations || []).map((ws, index) => ({
+                ...ws,
+                id: ws.id || `ws_${index}`,
+            }));
         } catch (error) {
             console.error('Error loading workstation data:', error);
+            this.state.workstations = [];
         }
     }
 
@@ -223,9 +244,46 @@ export class PlcDashboard extends Component {
                 'get_recent_cycles',
                 [10]
             );
-            this.state.recent_cycles = cycles;
+            // Ensure each cycle has an id for the template key
+            this.state.recent_cycles = (cycles || []).map((cycle, index) => ({
+                ...cycle,
+                id: cycle.id || `cycle_${index}`,
+            }));
         } catch (error) {
             console.error('Error loading recent cycles:', error);
+            this.state.recent_cycles = [];
+        }
+    }
+
+    async _loadRecentScans() {
+        try {
+            const result = await this.orm.call(
+                'dashboard.data',
+                'get_recent_scans',
+                [10]
+            );
+            // Ensure each scan has an id for the template key
+            const scans = result || [];
+            this.state.recent_scans = scans.map((scan, index) => ({
+                ...scan,
+                id: scan.id || `scan_${index}`,
+            }));
+        } catch (error) {
+            console.error('Error loading recent scans:', error);
+            this.state.recent_scans = [];
+        }
+    }
+
+    async _loadLastCycle() {
+        try {
+            const result = await this.orm.call(
+                'dashboard.data',
+                'get_last_cycle_info',
+                []
+            );
+            this.state.last_cycle = result;
+        } catch (error) {
+            console.error('Error loading last cycle:', error);
         }
     }
 
@@ -233,6 +291,8 @@ export class PlcDashboard extends Component {
         this._loadDashboardData();
         this._renderWorkstations();
         this._renderRecentCycles();
+        this._loadRecentScans();
+        this._loadLastCycle();
     }
 
     onExport() {
@@ -248,6 +308,121 @@ export class PlcDashboard extends Component {
             views: [[false, 'form']],
             target: 'current',
         });
+    }
+
+    _initScanner() {
+        // Focus scanner input when dashboard is ready
+        setTimeout(() => {
+            const scannerInput = this.el?.querySelector('.o_scanner_input');
+            if (scannerInput) {
+                scannerInput.focus();
+                this.state.scanner_ready = true;
+            }
+        }, 500);
+        
+        // Re-focus scanner input when clicking anywhere on dashboard
+        if (this.el) {
+            this.el.addEventListener('click', (e) => {
+                // Don't refocus if clicking on buttons or inputs
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                    return;
+                }
+                const scannerInput = this.el.querySelector('.o_scanner_input');
+                if (scannerInput) {
+                    scannerInput.focus();
+                }
+            });
+        }
+    }
+
+    onScannerKeyDown(ev) {
+        // Clear timeout
+        if (this.scan_timeout) {
+            clearTimeout(this.scan_timeout);
+        }
+        
+        // If Enter key, process the scan
+        if (ev.key === 'Enter') {
+            ev.preventDefault();
+            if (this.scan_buffer.trim()) {
+                this._processScan(this.scan_buffer.trim());
+                this.scan_buffer = '';
+                const scannerInput = this.el?.querySelector('.o_scanner_input');
+                if (scannerInput) {
+                    scannerInput.value = '';
+                }
+            }
+            return;
+        }
+        
+        // Add character to buffer (only printable characters)
+        if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+            this.scan_buffer += ev.key;
+        }
+        
+        // Auto-process after 200ms of no input (scanner sends data quickly)
+        this.scan_timeout = setTimeout(() => {
+            if (this.scan_buffer.trim().length >= 10) { // Minimum QR code length
+                this._processScan(this.scan_buffer.trim());
+                this.scan_buffer = '';
+                const scannerInput = this.el?.querySelector('.o_scanner_input');
+                if (scannerInput) {
+                    scannerInput.value = '';
+                }
+            }
+        }, 200);
+    }
+
+    async _processScan(qrData) {
+        if (!qrData || qrData.length < 10) {
+            return;
+        }
+        
+        console.log('[SCANNER] Processing scan:', qrData);
+        
+        try {
+            const response = await fetch('/api/scanner/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ qr_code: qrData })
+            });
+            
+            const result = await response.json();
+            
+            // Show result
+            this.state.scan_result = result;
+            
+            // Auto-hide result after 3 seconds
+            setTimeout(() => {
+                this.state.scan_result = null;
+            }, 3000);
+            
+            // Refresh dashboard data to show updated scan status
+            await this._loadRecentScans();
+            await this._loadLastCycle();
+            await this._loadDashboardData();
+            
+            // Re-focus scanner input
+            setTimeout(() => {
+                const scannerInput = this.el?.querySelector('.o_scanner_input');
+                if (scannerInput) {
+                    scannerInput.focus();
+                }
+            }, 100);
+            
+        } catch (error) {
+            console.error('[SCANNER] Error processing scan:', error);
+            this.state.scan_result = {
+                success: false,
+                match_found: false,
+                message: 'Error processing scan: ' + error.message
+            };
+            setTimeout(() => {
+                this.state.scan_result = null;
+            }, 3000);
+        }
     }
 }
 
