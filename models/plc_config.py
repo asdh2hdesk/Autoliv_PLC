@@ -1138,6 +1138,14 @@ class PlcWorkstation(models.Model):
                                         if method_name != methods_to_try[0][0]:
                                             _logger.info(f"[PLC READ] M{m_bit_number} (cycle_ok_bit) read successfully as {method_name} (primary method failed)")
                                         break
+                                    elif result and result.isError():
+                                        # Check for ExceptionResponse
+                                        if hasattr(result, 'exception_code'):
+                                            exception_code = result.exception_code
+                                            if exception_code == 2:
+                                                _logger.warning(f"[PLC READ] M{m_bit_number} (address {modbus_address}) {method_name}: ILLEGAL DATA ADDRESS - trying alternative method...")
+                                            else:
+                                                _logger.debug(f"[PLC READ] M{m_bit_number} (address {modbus_address}) {method_name}: Exception code {exception_code} - trying alternative...")
                                 except Exception as e:
                                     if method_name == methods_to_try[0][0]:
                                         _logger.debug(f"[PLC READ] M{m_bit_number} (address {modbus_address}) {method_name} read failed: {e}, trying alternative...")
@@ -1183,9 +1191,18 @@ class PlcWorkstation(models.Model):
                             _logger.info(f"[PLC READ] M{m_bit_number} (Modbus addr {modbus_address}, {state_key}): {status} (via {read_method_used}), raw value: {bit_value}, boolean: {bool(bit_value)}")
                         elif result and result.isError():
                             error_msg = str(result)
-                            # Log warning but don't fail completely - some bits might not be accessible
-                            _logger.warning(f"[PLC READ] M{m_bit_number} (Modbus addr {modbus_address}, {state_key}): ERROR - {error_msg}")
+                            # Check if it's an ExceptionResponse (Illegal Data Address)
+                            if hasattr(result, 'exception_code'):
+                                exception_code = result.exception_code
+                                if exception_code == 2:
+                                    _logger.warning(f"[PLC READ] M{m_bit_number} (Modbus addr {modbus_address}, {state_key}): ILLEGAL DATA ADDRESS (exception code 2) - Address {modbus_address} is not accessible. M{m_bit_number} may not exist or address mapping is incorrect.")
+                                    _logger.warning(f"[PLC READ] 💡 Suggestion: Verify M{m_bit_number} exists in PLC, or try different address offset. Current offset: {self.m_bit_address_offset}")
+                                else:
+                                    _logger.warning(f"[PLC READ] M{m_bit_number} (Modbus addr {modbus_address}, {state_key}): Modbus Exception Code {exception_code} - {error_msg}")
+                            else:
+                                _logger.warning(f"[PLC READ] M{m_bit_number} (Modbus addr {modbus_address}, {state_key}): ERROR - {error_msg}")
                             # Mark as False (default) and continue with other bits
+                            cycle_state[state_key] = False
                             continue
                         else:
                             _logger.warning(f"[PLC READ] M{m_bit_number} (Modbus addr {modbus_address}, {state_key}): No bits returned")
@@ -1193,6 +1210,12 @@ class PlcWorkstation(models.Model):
                     except Exception as e:
                         # Log error but continue with other bits
                         error_msg = str(e)
+                        # Check if it's an ExceptionResponse
+                        if 'ExceptionResponse' in str(type(e)) or 'exception_code' in str(e):
+                            if state_key == 'cycle_ok':
+                                _logger.error(f"[PLC READ] CRITICAL: M{m_bit_number} (address {modbus_address}) returned ExceptionResponse - Address may not exist or be accessible")
+                                _logger.error(f"[PLC READ] 💡 M{m_bit_number} may not be accessible at Modbus address {modbus_address} (M bit {m_bit_number} + offset {self.m_bit_address_offset})")
+                                _logger.error(f"[PLC READ] 💡 Try: 1) Verify M{m_bit_number} exists in PLC program, 2) Check if address offset is correct, 3) Use 'Test PLC Bit Access' button to find correct address")
                         # If it's a connection error for cycle_ok_bit, try to reconnect and retry once
                         if state_key == 'cycle_ok':
                             _logger.error(f"[PLC READ] CRITICAL: Failed to read cycle_ok_bit M{m_bit_number} at address {modbus_address}. Error: {error_msg}")
