@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Cron job to start/restart continuous PLC monitoring -->
+        <record id="cron_plc_monitoring" model="ir.cron">
+            <field name="name">PLC Continuous Monitoring</field>
+            <field name="model_id" ref="base.model_ir_model"/>
+            <field name="state">code</field>
+            <field name="code">model = env['plc.workstation']; model.start_all_continuous_monitoring()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+            <field name="priority">1</field>
+            <field name="nextcall" eval="(DateTime.now() + timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
+        
+    </data>
+</odoo>
+
