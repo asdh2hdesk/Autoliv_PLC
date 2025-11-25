@@ -370,10 +370,11 @@
 }
 
 .o_dashboard_last_cycle code {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(24, 243, 206, 0.5);
     padding: 5px 10px;
     border-radius: 6px;
-    font-family: 'Courier New', monospace;
+    font-family: monospace;
+    font-size: 22px;
     color: black;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
