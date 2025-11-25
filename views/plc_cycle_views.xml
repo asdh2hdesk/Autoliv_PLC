@@ -10,12 +10,13 @@
                 <list string="PLC Cycles" decoration-success="result == 'ok'" decoration-danger="result == 'nok'" decoration-info="result == 'pending'">
                     <field name="cycle_number"/>
                     <field name="part_name"/>
+                    <field name="variant_type"/>
                     <field name="barcode"/>
                     <field name="cycle_datetime"/>
                     <field name="torque_nm"/>
-                    <field name="s1_for"/>
-                    <field name="s2_for"/>
+                    <field name="initial_position"/>
                     <field name="final_position"/>
+                    <field name="load_cell_value"/>
                     <field name="cycle_time"/>
                     <field name="result" widget="badge"/>
                     <field name="qr_code_printed" widget="boolean_toggle"/>
@@ -49,6 +50,7 @@
                         <group>
                             <group>
                                 <field name="part_name"/>
+                                <field name="variant_type"/>
                                 <field name="barcode"/>
                                 <field name="cycle_datetime"/>
                                 <field name="operator_id"/>
@@ -57,21 +59,9 @@
                             <group>
                                 <field name="torque_nm"/>
                                 <field name="initial_position"/>
-                                <field name="forward_load_after"/>
                                 <field name="final_position"/>
+                                <field name="load_cell_value"/>
                                 <field name="cycle_time"/>
-                            </group>
-                        </group>
-                        <group string="CLUTCH Machine Measurements">
-                            <group>
-                                <field name="zero_position"/>
-                                <field name="s1_for"/>
-                                <field name="s2_for"/>
-<!--                                <field name="s2_rev"/>-->
-<!--                                <field name="s1_rev"/>-->
-                            </group>
-                            <group>
-                                <field name="initial_position_revload"/>
                             </group>
                         </group>
                         <group>

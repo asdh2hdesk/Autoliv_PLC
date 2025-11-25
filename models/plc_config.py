@@ -52,24 +52,33 @@ class PlcWorkstation(models.Model):
         help="Modbus register for cycle completion status"
     )
     torque_register = fields.Integer(
-        string='Torque Register',
-        help="Modbus register for torque value"
+        string='Torque Register (D2700)',
+        default=2700,
+        help="D register address for torque value (D2700)"
     )
     initial_position_register = fields.Integer(
-        string='Initial Position Register',
-        help="Modbus register for initial position"
+        string='Initial Position Register (D700)',
+        default=700,
+        help="D register address for initial position (D700)"
     )
     forward_load_register = fields.Integer(
-        string='Forward Load Register',
-        help="Modbus register for forward load"
+        string='Forward Load/Register Placeholder',
+        help="Legacy field (not used for Brake machine)"
     )
     final_position_register = fields.Integer(
-        string='Final Position Register',
-        help="Modbus register for final position"
+        string='Final Position Register (D704)',
+        default=704,
+        help="D register address for final position (D704)"
+    )
+    load_cell_register = fields.Integer(
+        string='Load Cell Register (D710)',
+        default=710,
+        help="D register address for load cell value (D710)"
     )
     cycle_time_register = fields.Integer(
-        string='Cycle Time Register',
-        help="Modbus register for cycle time"
+        string='Cycle Time Register (D720)',
+        default=720,
+        help="D register address for cycle time (D720)"
     )
     result_register = fields.Integer(
         string='Result Register',
@@ -85,19 +94,56 @@ class PlcWorkstation(models.Model):
         help="Number of characters in barcode"
     )
     
-    # QR Code Configuration
+    # QR Code Configuration (variant specific)
+    part_name_at = fields.Char(
+        string='Part Name (Brake-AT)',
+        default='BRAKE-AT',
+        help="Part description used when AT sensor bit is ON"
+    )
+    part_no_at = fields.Char(
+        string='Part Number (Brake-AT)',
+        help="Part number used for QR code generation when AT variant runs"
+    )
+    revision_at = fields.Char(
+        string='Revision (Brake-AT)',
+        size=2,
+        help="Revision character for Brake-AT variant"
+    )
+    vendor_code_at = fields.Char(
+        string='Vendor Code (Brake-AT)',
+        help="Vendor code used for Brake-AT variant"
+    )
+    part_name_mt = fields.Char(
+        string='Part Name (Brake-MT)',
+        default='BRAKE-MT',
+        help="Part description used when AT sensor bit is OFF (MT variant)"
+    )
+    part_no_mt = fields.Char(
+        string='Part Number (Brake-MT)',
+        help="Part number used for QR code generation when MT variant runs"
+    )
+    revision_mt = fields.Char(
+        string='Revision (Brake-MT)',
+        size=2,
+        help="Revision character for Brake-MT variant"
+    )
+    vendor_code_mt = fields.Char(
+        string='Vendor Code (Brake-MT)',
+        help="Vendor code used for Brake-MT variant"
+    )
+    # Legacy fallback values (used if variant-specific fields are empty)
     part_no = fields.Char(
-        string='Part Number',
-        help="Part number for QR code generation"
+        string='Default Part Number',
+        help="Fallback part number when variant specific value is empty"
     )
     revision = fields.Char(
-        string='Revision',
+        string='Default Revision',
         size=2,
-        help="Revision character for QR code"
+        help="Fallback revision when variant specific value is empty"
     )
     vendor_code = fields.Char(
-        string='Vendor Code',
-        help="Vendor code for QR code generation"
+        string='Default Vendor Code',
+        help="Fallback vendor code when variant specific value is empty"
     )
     
     # CLUTCH Machine Register Mappings (M bits - coils)
@@ -109,9 +155,14 @@ class PlcWorkstation(models.Model):
         help="Offset to add to M bit numbers to get Modbus address. For Mitsubishi FX5U: M0 = 8192, so M221 = 8192 + 221 = 8413. Default is 8192."
     )
     part_presence_bit = fields.Integer(
-        string='Part Presence Bit (M20)',
+        string='Part Presence Bit (M16)',
+        default=16,
+        help="M bit number for part presence detection (M16). Actual Modbus address = this value + offset."
+    )
+    part_at_bit = fields.Integer(
+        string='AT Variant Sensor Bit (M20)',
         default=20,
-        help="M bit number for part presence detection (M20). Actual Modbus address = this value + offset."
+        help="M bit number that indicates Brake-AT variant (ON=AT, OFF=MT). Actual Modbus address = this value + offset."
     )
     cycle_start_bit = fields.Integer(
         string='Cycle Start Bit (M201)',
@@ -124,31 +175,14 @@ class PlcWorkstation(models.Model):
         help="M bit number for cycle complete (M222). Actual Modbus address = this value + offset."
     )
     cycle_ok_bit = fields.Integer(
-        string='Cycle OK Bit (M221 or M2000)',
+        string='Cycle OK Bit (M2000)',
         default=2000,
-        help="M bit number for cycle OK. Use M221 for direct detection or M2000 for 5-second hold bit. Actual Modbus address = this value + offset (e.g., 2000 + 8192 = 10192)."
+        help="M bit number for cycle OK (Brake machines use M2000). Actual Modbus address = this value + offset."
     )
     cycle_nok_bit = fields.Integer(
         string='Cycle NOK Bit (M349)',
         default=349,
         help="M bit number for cycle NOK (M349). Actual Modbus address = this value + offset."
-    )
-    
-    # CLUTCH Machine Register Mappings (D registers - holding registers)
-    s1_for_register = fields.Integer(
-        string='S1_FOR Register (D2704)',
-        default=2704,
-        help="D register address for S1_FOR (D2704)"
-    )
-    s2_for_register = fields.Integer(
-        string='S2_FOR Register (D2708)',
-        default=2708,
-        help="D register address for S2_FOR (D2708)"
-    )
-    final_position_register_clutch = fields.Integer(
-        string='Final Position Register (D2712)',
-        default=2712,
-        help="D register address for final position (D2706)"
     )
     
     # Zebra Printer Configuration
@@ -957,6 +991,30 @@ class PlcWorkstation(models.Model):
                     client.close()
                 except:
                     pass
+
+    def _get_variant_part_config(self, variant):
+        """
+        Return part configuration dictionary for the requested variant.
+        Variant should be 'at' or 'mt'. Falls back to default values.
+        """
+        self.ensure_one()
+        variant = (variant or 'mt').lower()
+        if variant not in ('at', 'mt'):
+            variant = 'mt'
+
+        if variant == 'at':
+            return {
+                'part_name': self.part_name_at or self.part_name_mt or 'BRAKE-AT',
+                'part_no': self.part_no_at or self.part_no or '',
+                'revision': self.revision_at or self.revision or '',
+                'vendor_code': self.vendor_code_at or self.vendor_code or '',
+            }
+        return {
+            'part_name': self.part_name_mt or self.part_name_at or 'BRAKE-MT',
+            'part_no': self.part_no_mt or self.part_no or '',
+            'revision': self.revision_mt or self.revision or '',
+            'vendor_code': self.vendor_code_mt or self.vendor_code or '',
+        }
     
     def read_plc_holding_register_float(self, register_address):
         """
@@ -1037,6 +1095,7 @@ class PlcWorkstation(models.Model):
         self.ensure_one()
         cycle_state = {
             'part_presence': False,
+            'part_at': False,
             'cycle_start': False,
             'cycle_complete': False,
             'cycle_ok': False,
@@ -1082,6 +1141,10 @@ class PlcWorkstation(models.Model):
                 if self.part_presence_bit:
                     bit_addresses.append(self.part_presence_bit)
                     bit_mapping[self.part_presence_bit] = 'part_presence'
+
+                if self.part_at_bit:
+                    bit_addresses.append(self.part_at_bit)
+                    bit_mapping[self.part_at_bit] = 'part_at'
                 
                 if self.cycle_start_bit:
                     bit_addresses.append(self.cycle_start_bit)
@@ -1282,7 +1345,7 @@ class PlcWorkstation(models.Model):
                         Big = 1
                         Little = 2
             
-            # Read all CLUTCH measurement registers in one connection
+            # Read all measurement registers in one connection
             data = {}
             
             # Get client and connect once
@@ -1296,118 +1359,91 @@ class PlcWorkstation(models.Model):
             # Small delay to ensure connection is stable
             time.sleep(0.05)
             
-            # Read S1_FOR from D2704 - use raw register value directly
-            if self.s1_for_register:
+            # Determine current variant (AT vs MT) using configured sensor bit (M20)
+            # Read M20 AFTER client is connected
+            variant_type = 'mt'  # Default to MT
+            if self.part_at_bit:
                 try:
-                    _logger.info(f"[CYCLE CREATE] Reading S1_FOR from D register {self.s1_for_register}")
-                    result = self._read_holding_registers(client, self.s1_for_register, 1)
-                    if not result.isError() and result.registers:
-                        # Use the raw register value directly (no float conversion)
-                        data['s1_for'] = float(result.registers[0])
-                        _logger.info(f"[CYCLE CREATE] D{self.s1_for_register} raw register value: {result.registers[0]}, S1_FOR: {data['s1_for']}")
+                    variant_modbus_addr = self.part_at_bit + self.m_bit_address_offset
+                    _logger.info(f"[CYCLE CREATE] Reading AT/MT sensor bit M{self.part_at_bit} (Modbus addr {variant_modbus_addr})")
+                    variant_result = self._read_coils(client, variant_modbus_addr, 1)
+                    if not variant_result.isError() and variant_result.bits:
+                        is_at = bool(variant_result.bits[0])
+                        variant_type = 'at' if is_at else 'mt'
+                        _logger.info(f"[CYCLE CREATE] M{self.part_at_bit} is {'ON' if is_at else 'OFF'} - Variant: {variant_type.upper()}")
                     else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        _logger.warning(f"[CYCLE CREATE] Error reading S1_FOR from D{self.s1_for_register}: {error_msg}")
-                        data['s1_for'] = 0.0
-                    time.sleep(0.02)
-                except Exception as e:
-                    _logger.error(f"[CYCLE CREATE] Exception reading S1_FOR from D{self.s1_for_register}: {e}", exc_info=True)
-                    data['s1_for'] = 0.0
-            
-            # Read S2_FOR from D2708 - use raw register value directly
-            if self.s2_for_register:
-                try:
-                    _logger.info(f"[CYCLE CREATE] Reading S2_FOR from D register {self.s2_for_register}")
-                    result = self._read_holding_registers(client, self.s2_for_register, 1)
-                    if not result.isError() and result.registers:
-                        # Use the raw register value directly (no float conversion)
-                        data['s2_for'] = float(result.registers[0])
-                        _logger.info(f"[CYCLE CREATE] D{self.s2_for_register} raw register value: {result.registers[0]}, S2_FOR: {data['s2_for']}")
-                    else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        _logger.warning(f"[CYCLE CREATE] Error reading S2_FOR from D{self.s2_for_register}: {error_msg}")
-                        data['s2_for'] = 0.0
-                    time.sleep(0.02)
-                except Exception as e:
-                    _logger.error(f"[CYCLE CREATE] Exception reading S2_FOR from D{self.s2_for_register}: {e}", exc_info=True)
-                    data['s2_for'] = 0.0
-            
-            # Read final_position from D2706 - use raw register value directly
-            if self.final_position_register_clutch:
-                try:
-                    _logger.info(f"[CYCLE CREATE] Reading final_position from D register {self.final_position_register_clutch}")
-                    result = self._read_holding_registers(client, self.final_position_register_clutch, 1)
-                    if not result.isError() and result.registers:
-                        # Use the raw register value directly (no float conversion)
-                        data['final_position'] = float(result.registers[0])
-                        _logger.info(f"[CYCLE CREATE] D{self.final_position_register_clutch} raw register value: {result.registers[0]}, final_position: {data['final_position']}")
-                    else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        _logger.warning(f"[CYCLE CREATE] Error reading final_position from D{self.final_position_register_clutch}: {error_msg}")
-                        data['final_position'] = 0.0
-                    time.sleep(0.02)
-                except Exception as e:
-                    _logger.error(f"[CYCLE CREATE] Exception reading final_position from D{self.final_position_register_clutch}: {e}", exc_info=True)
-                    data['final_position'] = 0.0
-            
-            # Set default values for CLUTCH
-            data['zero_position'] = 0.0
-            data['initial_position'] = 0.0
-            data['s2_rev'] = 0.0
-            data['s1_rev'] = 0.0
-            data['initial_position_revload'] = 0.0
-            
-            # Read cycle time if available - use raw register value directly
-            if self.cycle_time_register:
-                try:
-                    _logger.info(f"[CYCLE CREATE] Reading cycle_time from D register {self.cycle_time_register}")
-                    result = self._read_holding_registers(client, self.cycle_time_register, 1)
-                    if not result.isError() and result.registers:
-                        # Use the raw register value directly (no float conversion)
-                        data['cycle_time'] = float(result.registers[0])
-                        _logger.info(f"[CYCLE CREATE] D{self.cycle_time_register} raw register value: {result.registers[0]}, cycle_time: {data['cycle_time']}")
-                    else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        _logger.warning(f"[CYCLE CREATE] Error reading cycle_time from D{self.cycle_time_register}: {error_msg}")
-                        data['cycle_time'] = 0.0
-                except Exception as e:
-                    _logger.error(f"[CYCLE CREATE] Exception reading cycle_time from D{self.cycle_time_register}: {e}", exc_info=True)
-                    data['cycle_time'] = 0.0
+                        error_msg = str(variant_result) if variant_result.isError() else "No bits returned"
+                        _logger.warning(f"[CYCLE CREATE] Unable to read AT/MT sensor (M{self.part_at_bit}) - {error_msg}")
+                except Exception as variant_error:
+                    _logger.warning(f"[CYCLE CREATE] Exception reading AT/MT sensor bit M{self.part_at_bit}: {variant_error}", exc_info=True)
             else:
-                data['cycle_time'] = 0.0
+                _logger.warning(f"[CYCLE CREATE] part_at_bit not configured - defaulting to MT variant")
             
-            # Set part name
-            data['part_name'] = 'CLUTCH PEDAL ASSY'
+            _logger.info(f"[CYCLE CREATE] ✅ Detected variant: {variant_type.upper()}")
+
+            variant_config = self._get_variant_part_config(variant_type)
+            
+            # Helper to read single register and store as float
+            def _read_single_register(field_key, register_address, label):
+                if not register_address:
+                    data[field_key] = 0.0
+                    return
+                try:
+                    _logger.info(f"[CYCLE CREATE] Reading {label} from D register {register_address}")
+                    result = self._read_holding_registers(client, register_address, 1)
+                    if not result.isError() and result.registers:
+                        data[field_key] = float(result.registers[0])
+                        _logger.info(f"[CYCLE CREATE] D{register_address} raw value: {result.registers[0]} ({label}: {data[field_key]})")
+                    else:
+                        error_msg = str(result) if result.isError() else "No registers returned"
+                        _logger.warning(f"[CYCLE CREATE] Error reading {label} from D{register_address}: {error_msg}")
+                        data[field_key] = 0.0
+                    time.sleep(0.02)
+                except Exception as read_error:
+                    _logger.error(f"[CYCLE CREATE] Exception reading {label} from D{register_address}: {read_error}", exc_info=True)
+                    data[field_key] = 0.0
+
+            _read_single_register('torque_nm', self.torque_register, 'torque')
+            _read_single_register('initial_position', self.initial_position_register, 'initial position')
+            _read_single_register('final_position', self.final_position_register, 'final position')
+            _read_single_register('load_cell_value', self.load_cell_register, 'load cell value')
+            _read_single_register('cycle_time', self.cycle_time_register, 'cycle time')
+
+            # Legacy fields kept for compatibility (set to zero)
+            data['zero_position'] = 0.0
+
+            # Set part name from variant config
+            data['part_name'] = variant_config.get('part_name') or 'BRAKE ASSEMBLY'
 
             # QR code data will be generated in cycle model, which also sets barcode
             # No need to set barcode separately - it will be synced with qr_code_data
             
             # Log all data before creating cycle
             _logger.info(f"[CYCLE CREATE] ========== Data Summary ==========")
-            _logger.info(f"[CYCLE CREATE] S1_FOR (D{self.s1_for_register}): {data.get('s1_for', 0.0)}")
-            _logger.info(f"[CYCLE CREATE] S2_FOR (D{self.s2_for_register}): {data.get('s2_for', 0.0)}")
-            _logger.info(f"[CYCLE CREATE] final_position (D{self.final_position_register_clutch}): {data.get('final_position', 0.0)}")
-            _logger.info(f"[CYCLE CREATE] cycle_time: {data.get('cycle_time', 0.0)}")
+            _logger.info(f"[CYCLE CREATE] Variant: {variant_type.upper()}")
+            _logger.info(f"[CYCLE CREATE] Torque (D{self.torque_register}): {data.get('torque_nm', 0.0)}")
+            _logger.info(f"[CYCLE CREATE] Initial Position (D{self.initial_position_register}): {data.get('initial_position', 0.0)}")
+            _logger.info(f"[CYCLE CREATE] Final Position (D{self.final_position_register}): {data.get('final_position', 0.0)}")
+            _logger.info(f"[CYCLE CREATE] Load Cell (D{self.load_cell_register}): {data.get('load_cell_value', 0.0)}")
+            _logger.info(f"[CYCLE CREATE] Cycle Time (D{self.cycle_time_register}): {data.get('cycle_time', 0.0)}")
             _logger.info(f"[CYCLE CREATE] ===================================")
             
             # Create cycle record
             cycle_vals = {
-                'part_name': data.get('part_name', 'CLUTCH PEDAL ASSY'),
+                'part_name': data.get('part_name', variant_config.get('part_name', 'BRAKE ASSEMBLY')),
                 'barcode': 'TEMP',  # Temporary value, will be replaced by generate_qr_code_data()
                 'zero_position': data.get('zero_position', 0.0),
                 'initial_position': data.get('initial_position', 0.0),
-                's1_for': data.get('s1_for', 0.0),
-                's2_for': data.get('s2_for', 0.0),
                 'final_position': data.get('final_position', 0.0),
-                's2_rev': data.get('s2_rev', 0.0),
-                's1_rev': data.get('s1_rev', 0.0),
-                'initial_position_revload': data.get('initial_position_revload', 0.0),
                 'cycle_time': data.get('cycle_time', 0.0),
+                'torque_nm': data.get('torque_nm', 0.0),
+                'load_cell_value': data.get('load_cell_value', 0.0),
+                'variant_type': variant_type,
                 'result': 'ok',  # Will be set based on cycle_ok or cycle_nok
                 'workstation_id': self.id,
             }
             
-            _logger.info(f"[CYCLE CREATE] Creating cycle record with values: s1_for={cycle_vals['s1_for']}, s2_for={cycle_vals['s2_for']}, final_position={cycle_vals['final_position']}")
+            _logger.info(f"[CYCLE CREATE] Creating cycle record with values: torque={cycle_vals['torque_nm']}, initial_position={cycle_vals['initial_position']}, final_position={cycle_vals['final_position']}, load_cell={cycle_vals['load_cell_value']}")
             cycle = self.env['plc.cycle'].create(cycle_vals)
             _logger.info(f"[CYCLE CREATE] ✅ Cycle record created with ID: {cycle.id}, Cycle Number: {cycle.cycle_number}")
             
@@ -2058,9 +2094,11 @@ class PlcWorkstation(models.Model):
             
             # Test reading the configured D registers
             test_registers = [
-                ('S1_FOR', self.s1_for_register, 'D2704'),
-                ('S2_FOR', self.s2_for_register, 'D2708'),
-                ('final_position', self.final_position_register_clutch, 'D2706'),
+                ('Torque', self.torque_register, f"D{self.torque_register}" if self.torque_register else 'N/A'),
+                ('Initial Position', self.initial_position_register, f"D{self.initial_position_register}" if self.initial_position_register else 'N/A'),
+                ('Final Position', self.final_position_register, f"D{self.final_position_register}" if self.final_position_register else 'N/A'),
+                ('Load Cell', self.load_cell_register, f"D{self.load_cell_register}" if self.load_cell_register else 'N/A'),
+                ('Cycle Time', self.cycle_time_register, f"D{self.cycle_time_register}" if self.cycle_time_register else 'N/A'),
             ]
             
             # Try importing BinaryPayloadDecoder

@@ -28,6 +28,11 @@ class PlcCycle(models.Model):
         required=True,
         help="Name of the part being processed"
     )
+    variant_type = fields.Selection([
+        ('at', 'Brake-AT'),
+        ('mt', 'Brake-MT')
+    ], string='Variant', default='mt',
+        help="Indicates whether the cycle corresponds to the AT or MT variant")
     barcode = fields.Char(
         string='Barcode',
         required=True,
@@ -59,6 +64,11 @@ class PlcCycle(models.Model):
         string='Final Position',
         digits=(10, 3),
         help="Final position measurement"
+    )
+    load_cell_value = fields.Float(
+        string='Load Cell Value',
+        digits=(10, 3),
+        help="Load cell measurement captured from D2500"
     )
     cycle_time = fields.Float(
         string='Cycle Time (s)',
@@ -191,9 +201,10 @@ class PlcCycle(models.Model):
         if not workstation:
             raise UserError(_("Workstation is required to generate QR code"))
         
-        part_no = workstation.part_no or ''
-        revision = workstation.revision or ''
-        vendor_code = workstation.vendor_code or ''
+        variant_config = workstation._get_variant_part_config(self.variant_type or 'mt')
+        part_no = variant_config.get('part_no') or workstation.part_no or ''
+        revision = variant_config.get('revision') or workstation.revision or ''
+        vendor_code = variant_config.get('vendor_code') or workstation.vendor_code or ''
         
         # Generate manufacturing date (MMYY format)
         from datetime import datetime
@@ -464,9 +475,16 @@ class PlcCycle(models.Model):
             mfg_date = ''
             serial_no = ''
         else:
-            part_no = workstation.part_no or ''
-            revision = workstation.revision or ''
-            vendor_code = workstation.vendor_code or ''
+            # Get variant-specific configuration based on cycle's variant_type
+            variant_type = self.variant_type or 'mt'
+            variant_config = workstation._get_variant_part_config(variant_type)
+            
+            # Use variant-specific part configuration
+            part_no = variant_config.get('part_no') or ''
+            revision = variant_config.get('revision') or ''
+            vendor_code = variant_config.get('vendor_code') or ''
+            
+            _logger.info(f"[ZPL] Using variant {variant_type.upper()} config: part_no={part_no}, revision={revision}, vendor_code={vendor_code}")
             
             # Get manufacturing date from cycle datetime (MMYY format)
             if self.cycle_datetime:

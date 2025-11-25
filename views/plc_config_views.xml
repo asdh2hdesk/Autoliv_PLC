@@ -25,7 +25,7 @@
             <field name="name">plc.workstation.form</field>
             <field name="model">plc.workstation</field>
             <field name="arch" type="xml">
-                <form edit="false" string="PLC Workstation">
+                <form edit="" string="PLC Workstation">
                     <header>
                         <button name="test_connection" string="Test Connection" type="object" class="btn-primary"/>
                         <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>
@@ -63,7 +63,19 @@
                             </group>
                         </group>
                         <group string="QR Code Configuration">
-                            <group>
+                            <group string="Brake-AT Variant">
+                                <field name="part_name_at"/>
+                                <field name="part_no_at"/>
+                                <field name="revision_at"/>
+                                <field name="vendor_code_at"/>
+                            </group>
+                            <group string="Brake-MT Variant">
+                                <field name="part_name_mt"/>
+                                <field name="part_no_mt"/>
+                                <field name="revision_mt"/>
+                                <field name="vendor_code_mt"/>
+                            </group>
+                            <group string="Fallback Defaults">
                                 <field name="part_no"/>
                                 <field name="revision"/>
                                 <field name="vendor_code"/>
@@ -84,31 +96,32 @@
                                 <field name="m_bit_read_method"/>
                                 <field name="m_bit_address_offset"/>
                                 <field name="part_presence_bit"/>
+                                <field name="part_at_bit"/>
                                 <field name="cycle_start_bit"/>
                                 <field name="cycle_complete_bit"/>
                                 <field name="cycle_ok_bit"/>
                                 <field name="cycle_nok_bit"/>
                             </group>
                         </group>
-                                <group string="CLUTCH Machine Registers (D registers)">
+                                <group string="Brake Machine Registers (D registers)">
                                     <group>
-                                        <field name="s1_for_register"/>
-                                        <field name="s2_for_register"/>
-                                        <field name="final_position_register_clutch"/>
+                                        <field name="torque_register"/>
+                                        <field name="initial_position_register"/>
+                                        <field name="final_position_register"/>
+                                    </group>
+                                    <group>
+                                        <field name="load_cell_register"/>
+                                        <field name="cycle_time_register"/>
+                                        <field name="forward_load_register"/>
                                     </group>
                                 </group>
                                 <group string="Legacy Registers">
                                     <group>
                                         <field name="cycle_start_register"/>
                                         <field name="cycle_complete_register"/>
-                                        <field name="torque_register"/>
-                                        <field name="initial_position_register"/>
-                                        <field name="forward_load_register"/>
+                                        <field name="result_register"/>
                                     </group>
                                     <group>
-                                        <field name="final_position_register"/>
-                                        <field name="cycle_time_register"/>
-                                        <field name="result_register"/>
                                         <field name="barcode_register_start"/>
                                         <field name="barcode_length"/>
                                     </group>
