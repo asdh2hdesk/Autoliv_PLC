@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- PLC Cycle Security -->
+        <record id="plc_cycle_user" model="ir.model.access">
+            <field name="name">plc.cycle.user</field>
+            <field name="model_id" ref="model_plc_cycle"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <record id="plc_cycle_manager" model="ir.model.access">
+            <field name="name">plc.cycle.manager</field>
+            <field name="model_id" ref="model_plc_cycle"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        
+        <!-- PLC Workstation Security -->
+        <record id="plc_workstation_user" model="ir.model.access">
+            <field name="name">plc.workstation.user</field>
+            <field name="model_id" ref="model_plc_workstation"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <record id="plc_workstation_manager" model="ir.model.access">
+            <field name="name">plc.workstation.manager</field>
+            <field name="model_id" ref="model_plc_workstation"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        
+        <!-- QR Code Log Security -->
+        <record id="qr_code_log_user" model="ir.model.access">
+            <field name="name">qr.code.log.user</field>
+            <field name="model_id" ref="model_qr_code_log"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <record id="qr_code_log_manager" model="ir.model.access">
+            <field name="name">qr.code.log.manager</field>
+            <field name="model_id" ref="model_qr_code_log"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        
+        <!-- Dashboard Data Security -->
+        <record id="dashboard_data_user" model="ir.model.access">
+            <field name="name">dashboard.data.user</field>
+            <field name="model_id" ref="model_dashboard_data"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <!-- Wizard Security -->
+        <record id="plc_print_wizard_user" model="ir.model.access">
+            <field name="name">plc.print.wizard.user</field>
+            <field name="model_id" ref="model_plc_print_wizard"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        
+        <record id="plc_scan_wizard_user" model="ir.model.access">
+            <field name="name">plc.scan.wizard.user</field>
+            <field name="model_id" ref="model_plc_scan_wizard"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        
+    </data>
+</odoo>

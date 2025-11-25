@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- PLC Workstation Tree View -->
+        <record id="view_plc_workstation_list" model="ir.ui.view">
+            <field name="name">plc.workstation.list</field>
+            <field name="model">plc.workstation</field>
+            <field name="arch" type="xml">
+                <list string="PLC Workstations" decoration-success="connection_status == 'connected'" decoration-danger="connection_status == 'error'">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="plc_ip"/>
+                    <field name="plc_port"/>
+                    <field name="is_active" widget="boolean_toggle"/>
+                    <field name="connection_status" widget="badge"/>
+                    <field name="last_connection"/>
+                    <field name="cycle_count"/>
+                </list>
+            </field>
+        </record>
+        
+        <!-- PLC Workstation Form View -->
+        <record id="view_plc_workstation_form" model="ir.ui.view">
+            <field name="name">plc.workstation.form</field>
+            <field name="model">plc.workstation</field>
+            <field name="arch" type="xml">
+                <form edit="" string="PLC Workstation">
+                    <header>
+                        <button name="test_connection" string="Test Connection" type="object" class="btn-primary"/>
+                        <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>
+                        <button name="action_force_create_cycle" string="Force Create Cycle (Test)" type="object" class="btn-success"/>
+                        <button name="test_cycle_detection" string="Test Cycle Detection" type="object" class="btn-secondary"/>
+                        <button name="test_d_register_reading" string="Test D Registers" type="object" class="btn-secondary"/>
+                        <button name="test_plc_bit_access" string="Test Bit Access" type="object" class="btn-secondary"/>
+                        <button name="test_m_bit_as_discrete_input" string="Test as Discrete Input" type="object" class="btn-secondary"/>
+                        <button name="find_m221_address" string="Find M221 Address" type="object" class="btn-secondary"/>
+                        <button name="scan_for_active_bits" string="Scan for Active Bits" type="object" class="btn-secondary"/>
+                        <button name="continuous_bit_monitor" string="Continuous Monitor (30s)" type="object" class="btn-secondary"/>
+                        <button name="start_continuous_monitoring" string="Start Monitoring" type="object" class="btn-success" modifiers="{'invisible': [('monitoring_active', '=', True)]}"/>
+                        <button name="stop_continuous_monitoring" string="Stop Monitoring" type="object" class="btn-warning" modifiers="{'invisible': [('monitoring_active', '=', False)]}"/>
+                        <field name="connection_status" widget="statusbar" statusbar_visible="connected,disconnected,error"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Workstation Name"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="is_active" widget="boolean_toggle"/>
+                                <field name="plc_ip"/>
+                                <field name="plc_port"/>
+                                <field name="unit_id"/>
+                                <field name="timeout"/>
+                                <field name="monitoring_active" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="last_connection" readonly="1"/>
+                                <field name="cycle_count" readonly="1"/>
+                            </group>
+                        </group>
+                        <group string="QR Code Configuration">
+                            <group string="Brake-AT Variant">
+                                <field name="part_name_at"/>
+                                <field name="part_no_at"/>
+                                <field name="revision_at"/>
+                                <field name="vendor_code_at"/>
+                            </group>
+                            <group string="Brake-MT Variant">
+                                <field name="part_name_mt"/>
+                                <field name="part_no_mt"/>
+                                <field name="revision_mt"/>
+                                <field name="vendor_code_mt"/>
+                            </group>
+                            <group string="Fallback Defaults">
+                                <field name="part_no"/>
+                                <field name="revision"/>
+                                <field name="vendor_code"/>
+                            </group>
+                        </group>
+                        <group string="Zebra Printer Configuration">
+                            <group>
+                                <field name="printer_type"/>
+                                <field name="printer_usb_name" modifiers="{'invisible': [('printer_type', '!=', 'usb')], 'required': [('printer_type', '=', 'usb')]}"/>
+                                <field name="printer_ip" modifiers="{'invisible': [('printer_type', '!=', 'network')], 'required': [('printer_type', '=', 'network')]}"/>
+                                <field name="printer_port" modifiers="{'invisible': [('printer_type', '!=', 'network')]}"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Modbus Registers" name="registers">
+                        <group string="Cycle Status Bits (M bits)">
+                            <group>
+                                <field name="m_bit_read_method"/>
+                                <field name="m_bit_address_offset"/>
+                                <field name="part_presence_bit"/>
+                                <field name="part_at_bit"/>
+                                <field name="cycle_start_bit"/>
+                                <field name="cycle_complete_bit"/>
+                                <field name="cycle_ok_bit"/>
+                                <field name="cycle_nok_bit"/>
+                            </group>
+                        </group>
+                                <group string="Brake Machine Registers (D registers)">
+                                    <group>
+                                        <field name="torque_register"/>
+                                        <field name="initial_position_register"/>
+                                        <field name="final_position_register"/>
+                                    </group>
+                                    <group>
+                                        <field name="load_cell_register"/>
+                                        <field name="cycle_time_register"/>
+                                        <field name="forward_load_register"/>
+                                    </group>
+                                </group>
+                                <group string="Legacy Registers">
+                                    <group>
+                                        <field name="cycle_start_register"/>
+                                        <field name="cycle_complete_register"/>
+                                        <field name="result_register"/>
+                                    </group>
+                                    <group>
+                                        <field name="barcode_register_start"/>
+                                        <field name="barcode_length"/>
+                                    </group>
+                                </group>
+                            </page>
+                            <page string="Cycles" name="cycles">
+                                <field name="cycle_ids" readonly="1">
+                                    <list>
+                                        <field name="cycle_number"/>
+                                        <field name="part_name"/>
+                                        <field name="barcode"/>
+                                        <field name="cycle_datetime"/>
+                                        <field name="result" widget="badge"/>
+                                        <field name="torque_nm"/>
+                                        <field name="cycle_time"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        
+        <!-- PLC Workstation Search View -->
+        <record id="view_plc_workstation_search" model="ir.ui.view">
+            <field name="name">plc.workstation.search</field>
+            <field name="model">plc.workstation</field>
+            <field name="arch" type="xml">
+                <search string="Search PLC Workstations">
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="plc_ip"/>
+                    <filter string="Active" name="active" domain="[('is_active', '=', True)]"/>
+                    <filter string="Connected" name="connected" domain="[('connection_status', '=', 'connected')]"/>
+                    <filter string="Disconnected" name="disconnected" domain="[('connection_status', '=', 'disconnected')]"/>
+                    <filter string="Error" name="error" domain="[('connection_status', '=', 'error')]"/>
+                </search>
+            </field>
+        </record>
+        
+        <!-- PLC Workstation Action -->
+        <record id="action_plc_workstation" model="ir.actions.act_window">
+            <field name="name">PLC Workstations</field>
+            <field name="res_model">plc.workstation</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_plc_workstation_search"/>
+        </record>
+        
+        <!-- QR Code Log Tree View -->
+        <record id="view_qr_code_log_list" model="ir.ui.view">
+            <field name="name">qr.code.log.list</field>
+            <field name="model">qr.code.log</field>
+            <field name="arch" type="xml">
+                <list string="QR Code Scans" decoration-success="match_status == 'matched'" decoration-danger="match_status == 'duplicate'" decoration-warning="match_status == 'not_found'">
+                    <field name="scan_reference"/>
+                    <field name="cycle_number"/>
+                    <field name="part_name"/>
+                    <field name="barcode"/>
+                    <field name="scan_datetime"/>
+                    <field name="match_status" widget="badge"/>
+                    <field name="cycle_id"/>
+                    <field name="operator_id"/>
+                    <field name="workstation_id"/>
+                </list>
+            </field>
+        </record>
+        
+        <!-- QR Code Log Form View -->
+        <record id="view_qr_code_log_form" model="ir.ui.view">
+            <field name="name">qr.code.log.form</field>
+            <field name="model">qr.code.log</field>
+            <field name="arch" type="xml">
+                <form string="QR Code Scan Log">
+                    <header>
+                        <button name="action_find_match" string="Find Match" type="object" class="btn-primary" modifiers="{'invisible': [('match_status', '!=', 'not_processed')]}"/>
+                        <field name="match_status" widget="statusbar" statusbar_visible="not_processed,matched,not_found,invalid_data,duplicate"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="scan_reference" readonly="1"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="scan_datetime"/>
+                                <field name="scanner_id"/>
+                                <field name="operator_id"/>
+                                <field name="workstation_id"/>
+                            </group>
+                            <group>
+                                <field name="cycle_number" readonly="1"/>
+                                <field name="part_name" readonly="1"/>
+                                <field name="barcode" readonly="1"/>
+                                <field name="cycle_datetime" readonly="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="cycle_id" modifiers="{'invisible': [('match_status', '!=', 'matched')]}"/>
+                            <field name="match_message" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="scanned_data" widget="text" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="notes" placeholder="Additional notes about this scan..."/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        
+        <!-- QR Code Log Search View -->
+        <record id="view_qr_code_log_search" model="ir.ui.view">
+            <field name="name">qr.code.log.search</field>
+            <field name="model">qr.code.log</field>
+            <field name="arch" type="xml">
+                <search string="Search QR Code Scans">
+                    <field name="scan_reference"/>
+                    <field name="cycle_number"/>
+                    <field name="part_name"/>
+                    <field name="barcode"/>
+                    <field name="operator_id"/>
+                    <field name="workstation_id"/>
+                    <filter string="Matched" name="matched" domain="[('match_status', '=', 'matched')]"/>
+                    <filter string="Not Found" name="not_found" domain="[('match_status', '=', 'not_found')]"/>
+                    <filter string="Invalid Data" name="invalid_data" domain="[('match_status', '=', 'invalid_data')]"/>
+                    <filter string="Duplicate" name="duplicate" domain="[('match_status', '=', 'duplicate')]"/>
+                    <separator/>
+                    <filter string="Today" name="today" domain="[('scan_datetime', '>=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                    <filter string="This Week" name="this_week" domain="[('scan_datetime', '>=', (context_today() - datetime.timedelta(days=context_today().weekday())).strftime('%Y-%m-%d'))]"/>
+                    <separator/>
+                    <group expand="0" string="Group By">
+                        <filter string="Match Status" name="group_status" context="{'group_by': 'match_status'}"/>
+                        <filter string="Operator" name="group_operator" context="{'group_by': 'operator_id'}"/>
+                        <filter string="Workstation" name="group_workstation" context="{'group_by': 'workstation_id'}"/>
+                        <filter string="Date" name="group_date" context="{'group_by': 'scan_datetime:day'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+        
+        <!-- QR Code Log Action -->
+        <record id="action_qr_code_log" model="ir.actions.act_window">
+            <field name="name">QR Code Scans</field>
+            <field name="res_model">qr.code.log</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_qr_code_log_search"/>
+            <field name="context">{'search_default_today': 1}</field>
+        </record>
+        
+    </data>
+</odoo>

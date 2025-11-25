@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Scan Template -->
+        <template id="scan_template" name="QR Code Scanner">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">QR Code Scanner</t>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <h1 class="text-center mb-4">QR Code Scanner</h1>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Scan QR Code</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="scanned-data">Scanned Data:</label>
+                                        <textarea id="scanned-data" class="form-control" rows="5" placeholder="Paste scanned QR code data here..."></textarea>
+                                    </div>
+                                    <button id="process-scan" class="btn btn-primary">Process Scan</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Scan Result</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="scan-result">
+                                        <p class="text-muted">No scan processed yet.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Monitor Template -->
+        <template id="monitor_template" name="Real-time Monitor">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Real-time Monitor</t>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <h1 class="text-center mb-4">Real-time PLC Monitor</h1>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Workstation Status</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="workstation-monitor">
+                                        <!-- Workstation status will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Live Cycle Data</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="live-cycles">
+                                        <!-- Live cycle data will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Print Template -->
+        <template id="print_template" name="Print QR Code">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Print QR Code</t>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <h1 class="text-center mb-4">Print QR Code</h1>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Cycle Information</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Cycle Number:</strong> <span t-esc="cycle.cycle_number"/></p>
+                                    <p><strong>Part Name:</strong> <span t-esc="cycle.part_name"/></p>
+                                    <p><strong>Barcode:</strong> <span t-esc="cycle.barcode"/></p>
+                                    <p><strong>Torque:</strong> <span t-esc="cycle.torque_nm"/> Nm</p>
+                                    <p><strong>Result:</strong> <span t-esc="cycle.result"/></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>QR Code Data</h5>
+                                </div>
+                                <div class="card-body">
+                                    <pre t-esc="qr_data"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12 text-center">
+                            <button class="btn btn-success btn-lg" onclick="window.print()">Print Label</button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- USB Scanner Input Page -->
+        <template id="scanner_input_page" name="USB QR Code Scanner">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">QR Code Scanner - USB</t>
+                <div class="container-fluid" style="padding: 20px;">
+                    <div class="row">
+                        <div class="col-12 text-center">
+                            <h1 style="margin-bottom: 30px;">QR Code Scanner</h1>
+                            <p class="lead">Scan QR code from printed label using USB scanner</p>
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <div class="card shadow">
+                                <div class="card-header bg-primary text-white">
+                                    <h3 class="mb-0">Scan QR Code</h3>
+                                </div>
+                                <div class="card-body" style="padding: 40px;">
+                                    <form id="scanner-form" method="GET" action="/api/plc/scan/usb">
+                                        <div class="form-group">
+                                            <label for="qr_code" style="font-size: 18px; font-weight: bold;">QR Code:</label>
+                                            <input 
+                                                type="text" 
+                                                id="qr_code" 
+                                                name="qr_code" 
+                                                class="form-control form-control-lg" 
+                                                style="font-size: 24px; text-align: center; letter-spacing: 2px;"
+                                                placeholder="Scan QR code here..." 
+                                                autofocus="autofocus"
+                                                autocomplete="off"
+                                                required="required"
+                                            />
+                                            <small class="form-text text-muted">
+                                                Point USB scanner at QR code and scan. The scanner will automatically submit.
+                                            </small>
+                                        </div>
+                                        <div class="text-center" style="margin-top: 20px;">
+                                            <button type="submit" class="btn btn-success btn-lg" style="display: none;" id="submit-btn">Verify</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="card shadow mt-4" id="last-cycle-info" style="display: none;">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Last Created Cycle</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p id="last-cycle-details" class="mb-0"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script type="text/javascript">
+                    <![CDATA[
+                    (function() {
+                        // Auto-submit when Enter is pressed (USB scanner sends Enter after scan)
+                        var qrInput = document.getElementById('qr_code');
+                        var form = document.getElementById('scanner-form');
+                        
+                        if (qrInput && form) {
+                            qrInput.addEventListener('keypress', function(e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    form.submit();
+                                }
+                            });
+                            
+                            // Focus input on page load
+                            qrInput.focus();
+                            
+                            // Load last cycle info
+                            fetch('/api/plc/scan/usb?get_last_cycle=1')
+                                .then(function(response) { return response.json(); })
+                                .then(function(data) {
+                                    if (data.last_cycle) {
+                                        var infoDiv = document.getElementById('last-cycle-info');
+                                        var detailsDiv = document.getElementById('last-cycle-details');
+                                        if (infoDiv && detailsDiv) {
+                                            infoDiv.style.display = 'block';
+                                            detailsDiv.innerHTML = 
+                                                '<strong>Cycle:</strong> ' + (data.last_cycle.cycle_number || '') + '<br>' +
+                                                '<strong>Part:</strong> ' + (data.last_cycle.part_name || '') + '<br>' +
+                                                '<strong>QR Code:</strong> ' + (data.last_cycle.qr_code_data || '');
+                                        }
+                                    }
+                                })
+                                .catch(function(err) { console.log('Could not load last cycle info'); });
+                        }
+                    })();
+                    ]]>
+                </script>
+            </t>
+        </template>
+
+        <!-- Scanner Result Page -->
+        <template id="scanner_result_page" name="Scan Result">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Scan Result</t>
+                <div class="container-fluid" style="padding: 20px;">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <t t-if="success">
+                                <div class="card shadow border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h3 class="mb-0">✅ Match Found!</h3>
+                                    </div>
+                                    <div class="card-body" style="padding: 40px;">
+                                        <div class="alert alert-success">
+                                            <h4><t t-esc="message"/></h4>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p><strong>Cycle Number:</strong> <span t-esc="cycle_number"/></p>
+                                                <p><strong>Part Name:</strong> <span t-esc="part_name"/></p>
+                                                <p><strong>Cycle ID:</strong> <span t-esc="cycle_id"/></p>
+                                                <t t-if="is_last_record">
+                                                    <p class="text-success"><strong>✓ This is the last created record</strong></p>
+                                                </t>
+                                            </div>
+                                        </div>
+                                        <div class="text-center mt-4">
+                                            <a href="/api/plc/scan/usb" class="btn btn-primary btn-lg">Scan Another</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                            <t t-if="success == False">
+                                <div class="card shadow border-danger">
+                                    <div class="card-header bg-danger text-white">
+                                        <h3 class="mb-0">❌ No Match Found</h3>
+                                    </div>
+                                    <div class="card-body" style="padding: 40px;">
+                                        <div class="alert alert-danger">
+                                            <h4><t t-esc="message"/></h4>
+                                        </div>
+                                        <p><strong>Scanned Data:</strong> <code><span t-esc="scanned_data"/></code></p>
+                                        <t t-if="last_cycle">
+                                            <div class="alert alert-info mt-3">
+                                                <h5>Last Created Cycle:</h5>
+                                                <p><strong>Cycle:</strong> <span t-esc="last_cycle['cycle_number'] or ''"/></p>
+                                                <p><strong>Part:</strong> <span t-esc="last_cycle['part_name'] or ''"/></p>
+                                                <p><strong>Expected QR Code:</strong> <code><span t-esc="last_cycle['qr_code_data'] or ''"/></code></p>
+                                            </div>
+                                        </t>
+                                        <div class="text-center mt-4">
+                                            <a href="/api/plc/scan/usb" class="btn btn-primary btn-lg">Try Again</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+                <script type="text/javascript">
+                    <![CDATA[
+                    // Auto-redirect after 5 seconds
+                    setTimeout(function() {
+                        window.location.href = '/api/plc/scan/usb';
+                    }, 5000);
+                    ]]>
+                </script>
+            </t>
+        </template>
+
+        <!-- Background Scanner Capture Page (Kiosk Mode) -->
+        <template id="scanner_capture_page" name="Scanner Capture">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">QR Code Scanner</t>
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <!-- Hidden input to capture scanner data -->
+                    <input 
+                        type="text" 
+                        id="scanner-input"
+                        style="position: absolute; top: -9999px; left: -9999px; opacity: 0;"
+                        autofocus="autofocus"
+                        autocomplete="off"
+                    />
+                    
+                    <!-- Status Display -->
+                    <div id="status-display" style="text-align: center; padding: 20px;">
+                        <h1 style="font-size: 48px; margin-bottom: 20px;">QR Code Scanner</h1>
+                        <p style="font-size: 24px; color: #888;">Ready to scan...</p>
+                        <div id="result-display" style="margin-top: 30px; font-size: 32px;"></div>
+                    </div>
+                </div>
+                <script type="text/javascript">
+                    <![CDATA[
+                    (function() {
+                        var input = document.getElementById('scanner-input');
+                        var resultDiv = document.getElementById('result-display');
+                        var statusDiv = document.getElementById('status-display');
+                        var scanBuffer = '';
+                        var scanTimeout = null;
+                        
+                        // Focus input immediately
+                        input.focus();
+                        
+                        // Capture all keyboard input
+                        input.addEventListener('keydown', function(e) {
+                            // Clear timeout
+                            if (scanTimeout) {
+                                clearTimeout(scanTimeout);
+                            }
+                            
+                            // If Enter key, process the scan
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                processScan(scanBuffer);
+                                scanBuffer = '';
+                                input.value = '';
+                                return;
+                            }
+                            
+                            // Add character to buffer
+                            if (e.key.length === 1) {
+                                scanBuffer += e.key;
+                            }
+                            
+                            // Auto-process after 100ms of no input (scanner sends data quickly)
+                            scanTimeout = setTimeout(function() {
+                                if (scanBuffer.length >= 10) { // Minimum QR code length
+                                    processScan(scanBuffer);
+                                    scanBuffer = '';
+                                    input.value = '';
+                                }
+                            }, 100);
+                        });
+                        
+                        function processScan(qrData) {
+                            if (!qrData || qrData.length < 10) return;
+                            
+                            // Show processing
+                            resultDiv.innerHTML = '<p style="color: #ffa500;">Processing...</p>';
+                            
+                            // Send to API
+                            fetch('/api/scanner/verify', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({qr_code: qrData})
+                            })
+                            .then(function(response) { return response.json(); })
+                            .then(function(data) {
+                                if (data.match_found) {
+                                    resultDiv.innerHTML = 
+                                        '<p style="color: #4caf50; font-weight: bold;">✅ VERIFIED!</p>' +
+                                        '<p style="font-size: 20px;">Cycle: ' + (data.cycle_number || '') + '</p>' +
+                                        '<p style="font-size: 20px;">Part: ' + (data.part_name || '') + '</p>';
+                                    
+                                    // Play success sound (optional)
+                                    // var audio = new Audio('data:audio/wav;base64,...');
+                                    // audio.play();
+                                } else {
+                                    resultDiv.innerHTML = 
+                                        '<p style="color: #f44336; font-weight: bold;">❌ NOT MATCHED!</p>' +
+                                        '<p style="font-size: 18px;">Scanned: ' + (data.scanned_data || '').substring(0, 32) + '</p>' +
+                                        '<p style="font-size: 18px;">Expected: ' + (data.last_cycle_qr || '').substring(0, 32) + '</p>';
+                                }
+                                
+                                // Clear after 3 seconds
+                                setTimeout(function() {
+                                    resultDiv.innerHTML = '';
+                                    input.focus();
+                                }, 3000);
+                            })
+                            .catch(function(error) {
+                                resultDiv.innerHTML = '<p style="color: #f44336;">Error: ' + error + '</p>';
+                                setTimeout(function() {
+                                    resultDiv.innerHTML = '';
+                                    input.focus();
+                                }, 3000);
+                            });
+                        }
+                        
+                        // Keep input focused
+                        setInterval(function() {
+                            if (document.activeElement !== input) {
+                                input.focus();
+                            }
+                        }, 1000);
+                    })();
+                    ]]>
+                </script>
+            </t>
+        </template>
+
+        <!-- Direct Scanner Verification Page -->
+        <template id="scanner_verify_direct" name="QR Code Verification">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">QR Code Verification</t>
+                <div style="padding: 20px; max-width: 800px; margin: 0 auto;">
+                    <t t-if="error">
+                        <div class="alert alert-danger">
+                            <h4>Error</h4>
+                            <p t-esc="error"/>
+                        </div>
+                    </t>
+                    <t t-if="not error">
+                        <!-- Scanner Input Form -->
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1>QR Code Verification</h1>
+                            <p style="font-size: 18px;">Scan QR code from printed label</p>
+                        </div>
+                        
+                        <form method="GET" action="/scanner/verify" id="scan-form" style="margin-bottom: 30px;">
+                            <div style="margin-bottom: 20px;">
+                                <input 
+                                    type="text" 
+                                    name="qr" 
+                                    id="qr-input"
+                                    style="width: 100%; padding: 20px; font-size: 24px; text-align: center; border: 2px solid #007bff; border-radius: 5px;"
+                                    placeholder="Scan QR code here..."
+                                    autofocus="autofocus"
+                                    autocomplete="off"
+                                />
+                            </div>
+                        </form>
+                        
+                        <!-- Last Cycle Info -->
+                        <t t-if="last_cycle">
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                                <h3 style="margin-top: 0;">Last Printed Cycle:</h3>
+                                <p><strong>Cycle:</strong> <span t-esc="last_cycle.cycle_number"/></p>
+                                <p><strong>Part:</strong> <span t-esc="last_cycle.part_name"/></p>
+                                <p><strong>QR Code:</strong> <code style="font-size: 14px;" t-esc="last_cycle.qr_code_data"/></p>
+                            </div>
+                        </t>
+                        
+                        <!-- Scan Result -->
+                        <t t-if="scanned_data">
+                            <t t-if="match_found">
+                                <div style="background: #d4edda; border: 2px solid #28a745; padding: 20px; border-radius: 5px; text-align: center;">
+                                    <h2 style="color: #155724; margin-top: 0;">✅ VERIFIED!</h2>
+                                    <p style="font-size: 18px; color: #155724;">QR Code matches last printed cycle</p>
+                                    <p><strong>Cycle:</strong> <span t-esc="cycle.cycle_number"/></p>
+                                    <p><strong>Part:</strong> <span t-esc="cycle.part_name"/></p>
+                                </div>
+                            </t>
+                            <t t-if="match_found == False">
+                                <div style="background: #f8d7da; border: 2px solid #dc3545; padding: 20px; border-radius: 5px; text-align: center;">
+                                    <h2 style="color: #721c24; margin-top: 0;">❌ NOT MATCHED!</h2>
+                                    <p style="font-size: 18px; color: #721c24;">QR Code does not match last printed cycle</p>
+                                    <p><strong>Scanned:</strong> <code t-esc="scanned_data"/></p>
+                                    <t t-if="last_cycle">
+                                        <p><strong>Expected:</strong> <code t-esc="last_cycle.qr_code_data"/></p>
+                                    </t>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </div>
+                <script type="text/javascript">
+                    <![CDATA[
+                    (function() {
+                        var input = document.getElementById('qr-input');
+                        var form = document.getElementById('scan-form');
+                        
+                        if (input && form) {
+                            // Auto-submit on Enter (scanner sends Enter)
+                            input.addEventListener('keypress', function(e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    form.submit();
+                                }
+                            });
+                            
+                            // Auto-focus and clear on page load
+                            input.focus();
+                            input.value = '';
+                            
+                            // Auto-redirect after 3 seconds if result is shown
+                            var hasResult = document.querySelector('[style*="VERIFIED"]') || document.querySelector('[style*="NOT MATCHED"]');
+                            if (hasResult) {
+                                setTimeout(function() {
+                                    window.location.href = '/scanner/verify';
+                                }, 3000);
+                            }
+                        }
+                    })();
+                    ]]>
+                </script>
+            </t>
+        </template>
+
+        <!-- Error Template -->
+        <template id="error_template" name="Error">
+            <t t-call="web.frontend_layout">
+                <t t-set="title">Error</t>
+                <div class="container">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                <h4>Error</h4>
+                                <p t-esc="error"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>
