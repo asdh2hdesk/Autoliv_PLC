@@ -1,4 +1,4 @@
-/* AutoLiv PLC Real-time Monitor JavaScript */
+/* Autoline PLC Real-time Monitor JavaScript */
 
 import { AbstractAction } from "@web/legacy/js/core/abstract_action";
 import { _t } from "@web/core/l10n/translation";
@@ -8,7 +8,7 @@ import { registry } from "@web/core/registry";
 export class PlcMonitor extends AbstractAction {
         constructor() {
             super();
-            this.template = 'autoline_brake_atmt.monitor_template';
+            this.template = 'autoline_brake_rowa.monitor_template';
             this.events = {
                 'click .btn-read-plc': '_onReadPlc',
                 'click .btn-test-connection': '_onTestConnection',
@@ -263,6 +263,6 @@ export class PlcMonitor extends AbstractAction {
         }
     }
 
-    registry.category("actions").add("autoline_brake_atmt.monitor", PlcMonitor);
+    registry.category("actions").add("autoline_brake_rowa.monitor", PlcMonitor);
 
     export default PlcMonitor;

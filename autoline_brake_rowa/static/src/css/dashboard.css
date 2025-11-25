@@ -1,4 +1,4 @@
-/* AutoLiv PLC Dashboard Styles */
+/* Autoline PLC Dashboard Styles */
 
 /* Ensure Odoo containers can scroll */
 .o_action_manager,
@@ -10,7 +10,7 @@
 
 .o_plc_dashboard {
     min-height: 100vh;
-    background: url('/autoline_brake_atmt/static/src/img/dashboard_bg.png') no-repeat center center fixed;
+    background: url('/autoline_brake_rowa/static/src/img/dashboard_bg.png') no-repeat center center fixed;
     background-size: cover;
     padding: 20px;
     overflow-y: auto;

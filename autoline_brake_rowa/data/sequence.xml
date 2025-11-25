@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- PLC Cycle Sequence -->
+        <record id="seq_plc_cycle" model="ir.sequence">
+            <field name="name">PLC Cycle</field>
+            <field name="code">plc.cycle</field>
+            <field name="prefix">CYC</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        
+        <!-- PLC Barcode Sequence -->
+<!--        <record id="seq_plc_barcode" model="ir.sequence">-->
+<!--            <field name="name">PLC Barcode</field>-->
+<!--            <field name="code">plc.barcode</field>-->
+<!--            <field name="prefix">BC</field>-->
+<!--            <field name="padding">8</field>-->
+<!--            <field name="number_next">1</field>-->
+<!--            <field name="number_increment">1</field>-->
+<!--        </record>-->
+        
+        <!-- QR Code Log Sequence -->
+        <record id="seq_qr_code_log" model="ir.sequence">
+            <field name="name">QR Code Log</field>
+            <field name="code">qr.code.log</field>
+            <field name="prefix">QR</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        
+        <!-- Serial Number Sequence for QR Code -->
+        <record id="seq_plc_serial_number" model="ir.sequence">
+            <field name="name">PLC Serial Number</field>
+            <field name="code">plc.serial.number</field>
+            <field name="prefix"></field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        
+    </data>
+</odoo>

@@ -5,7 +5,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 export class PlcDashboard extends Component {
-    static template = "autoline_brake_atmt.dashboard_template";
+    static template = "autoline_brake_rowa.dashboard_template";
 
     setup() {
         this.orm = useService("orm");
@@ -426,4 +426,4 @@ export class PlcDashboard extends Component {
     }
 }
 
-registry.category("actions").add("autoline_brake_atmt.dashboard", PlcDashboard);
+registry.category("actions").add("autoline_brake_rowa.dashboard", PlcDashboard);
