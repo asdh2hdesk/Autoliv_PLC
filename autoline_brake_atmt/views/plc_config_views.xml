@@ -25,7 +25,7 @@
             <field name="name">plc.workstation.form</field>
             <field name="model">plc.workstation</field>
             <field name="arch" type="xml">
-                <form edit="" string="PLC Workstation">
+                <form edit="false" string="PLC Workstation">
                     <header>
                         <button name="test_connection" string="Test Connection" type="object" class="btn-primary"/>
 <!--                        <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>-->

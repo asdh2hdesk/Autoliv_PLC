@@ -7,7 +7,7 @@
             <field name="name">plc.cycle.list</field>
             <field name="model">plc.cycle</field>
             <field name="arch" type="xml">
-                <list string="PLC Cycles" decoration-success="result == 'ok'" decoration-danger="result == 'nok'" decoration-info="result == 'pending'">
+                <list edit="false" string="PLC Cycles" decoration-success="result == 'ok'" decoration-danger="result == 'nok'" decoration-info="result == 'pending'">
                     <field name="cycle_number"/>
                     <field name="part_name"/>
                     <field name="variant_type"/>
