@@ -75,7 +75,7 @@
                 </div>
 
                 <!-- Metrics Cards -->
-                <div class="o_dashboard_metrics o_clearfix">
+                <div class="o_dashboard_metrics">
                     <div class="o_metric_card o_metric_primary">
                         <div class="o_metric_content">
                             <h5>Total Cycles</h5>
