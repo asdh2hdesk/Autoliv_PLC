@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_plc_cycle_user,plc.cycle.user,model_plc_cycle,base.group_user,1,1,1,0
+access_plc_cycle_manager,plc.cycle.manager,model_plc_cycle,base.group_system,1,1,1,1
+access_plc_workstation_user,plc.workstation.user,model_plc_workstation,base.group_user,1,0,0,0
+access_plc_workstation_manager,plc.workstation.manager,model_plc_workstation,base.group_system,1,1,1,1
+access_qr_code_log_user,qr.code.log.user,model_qr_code_log,base.group_user,1,1,1,0
+access_qr_code_log_manager,qr.code.log.manager,model_qr_code_log,base.group_system,1,1,1,1
+access_dashboard_data_user,dashboard.data.user,model_dashboard_data,base.group_user,1,0,0,0
+access_plc_print_wizard_user,plc.print.wizard.user,model_plc_print_wizard,base.group_user,1,1,1,1
+access_plc_scan_wizard_user,plc.scan.wizard.user,model_plc_scan_wizard,base.group_user,1,1,1,1
+access_autoline_part_user,access.autoline.part.user,model_autoline_part,base.group_user,1,1,1,1
