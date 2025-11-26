@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'AutoLiv PLC Integration',
+    'name': 'AutoLiv BRAKE AT/MT',
     'version': '18.0.1.0.6',
     'category': 'Manufacturing',
     'summary': 'Mitsubishi PLC Integration with ModbusTCP, QR Code Printing and Dashboard',
     'description': """
         AutoLiv PLC Integration Module
+        BRAKE AT/MT MACHINE
         =============================
         
         This module provides:

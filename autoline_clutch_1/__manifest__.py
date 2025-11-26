@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Autoline PLC Integration',
+    'name': 'Autoline CLUTCH',
     'version': '18.0.1.0.6',
     'category': 'Manufacturing',
     'summary': 'Mitsubishi PLC Integration with ModbusTCP, QR Code Printing and Dashboard',
     'description': """
         Autoline PLC Integration Module
+        CLUTCH MACHINE
         =============================
         
         This module provides:
