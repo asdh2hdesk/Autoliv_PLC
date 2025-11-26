@@ -19,8 +19,8 @@
                     <field name="load_cell_value"/>
                     <field name="cycle_time"/>
                     <field name="result" widget="badge"/>
-                    <field name="qr_code_printed" widget="boolean_toggle"/>
-                    <field name="qr_code_scanned" widget="boolean_toggle"/>
+                    <field name="qr_code_printed" widget="boolean_toggle" readonly="1"/>
+                    <field name="qr_code_scanned" widget="boolean_toggle" readonly="1"/>
                     <field name="qr_match_status" widget="badge"/>
                     <field name="operator_id"/>
                     <field name="workstation_id"/>
