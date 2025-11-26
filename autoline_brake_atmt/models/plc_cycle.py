@@ -211,8 +211,14 @@ class PlcCycle(models.Model):
         now = datetime.now()
         mfg_date = now.strftime('%m%y')  # MMYY format
         
-        # Generate serial number (6 digits) from sequence
-        serial_no = self.env['ir.sequence'].next_by_code('plc.serial.number') or '000001'
+        # Generate serial number (6 digits) from sequence based on variant type
+        variant_type = self.variant_type or 'mt'
+        if variant_type.lower() == 'at':
+            sequence_code = 'plc.serial.number.at'
+        else:  # MT or default
+            sequence_code = 'plc.serial.number.mt'
+        
+        serial_no = self.env['ir.sequence'].next_by_code(sequence_code) or '000001'
         # Ensure serial number is 6 digits
         serial_no = serial_no.zfill(6)[:6]
         

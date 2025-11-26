@@ -32,10 +32,20 @@
             <field name="number_increment">1</field>
         </record>
         
-        <!-- Serial Number Sequence for QR Code -->
-        <record id="seq_plc_serial_number" model="ir.sequence">
-            <field name="name">PLC Serial Number</field>
-            <field name="code">plc.serial.number</field>
+        <!-- Serial Number Sequence for QR Code - AT Variant -->
+        <record id="seq_plc_serial_number_at" model="ir.sequence">
+            <field name="name">PLC Serial Number (AT)</field>
+            <field name="code">plc.serial.number.at</field>
+            <field name="prefix"></field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        
+        <!-- Serial Number Sequence for QR Code - MT Variant -->
+        <record id="seq_plc_serial_number_mt" model="ir.sequence">
+            <field name="name">PLC Serial Number (MT)</field>
+            <field name="code">plc.serial.number.mt</field>
             <field name="prefix"></field>
             <field name="padding">6</field>
             <field name="number_next">1</field>
