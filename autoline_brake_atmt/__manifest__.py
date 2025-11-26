@@ -32,7 +32,6 @@
         'views/plc_config_views.xml',
         'views/dashboard_views.xml',
         'views/menu_views.xml',
-        'views/print_wizard_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

@@ -76,25 +76,52 @@
             <field name="perm_unlink" eval="False"/>
         </record>
         
-        <!-- Wizard Security -->
-        <record id="plc_print_wizard_user" model="ir.model.access">
-            <field name="name">plc.print.wizard.user</field>
-            <field name="model_id" ref="model_plc_print_wizard"/>
-            <field name="group_id" ref="base.group_user"/>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
+        <!-- Read-Only User Group -->
+        <record id="group_plc_readonly_user" model="res.groups">
+            <field name="name">PLC Read-Only User</field>
+            <field name="category_id" ref="base.module_category_manufacturing"/>
+            <field name="comment">User with read-only access to PLC data (no create, write, or delete permissions)</field>
         </record>
         
-        <record id="plc_scan_wizard_user" model="ir.model.access">
-            <field name="name">plc.scan.wizard.user</field>
-            <field name="model_id" ref="model_plc_scan_wizard"/>
-            <field name="group_id" ref="base.group_user"/>
+        <!-- Read-Only Access Rules -->
+        <record id="plc_cycle_readonly_user" model="ir.model.access">
+            <field name="name">plc.cycle.readonly.user</field>
+            <field name="model_id" ref="model_plc_cycle"/>
+            <field name="group_id" ref="group_plc_readonly_user"/>
             <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_unlink" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <record id="plc_workstation_readonly_user" model="ir.model.access">
+            <field name="name">plc.workstation.readonly.user</field>
+            <field name="model_id" ref="model_plc_workstation"/>
+            <field name="group_id" ref="group_plc_readonly_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <record id="qr_code_log_readonly_user" model="ir.model.access">
+            <field name="name">qr.code.log.readonly.user</field>
+            <field name="model_id" ref="model_qr_code_log"/>
+            <field name="group_id" ref="group_plc_readonly_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
+        <record id="dashboard_data_readonly_user" model="ir.model.access">
+            <field name="name">dashboard.data.readonly.user</field>
+            <field name="model_id" ref="model_dashboard_data"/>
+            <field name="group_id" ref="group_plc_readonly_user"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
         </record>
         
     </data>

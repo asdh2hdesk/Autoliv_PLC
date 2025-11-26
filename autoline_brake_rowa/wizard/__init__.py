@@ -1,4 +1,2 @@
 # -*- coding: utf-8 -*-
-
-from . import print_wizard
-from . import scan_wizard
+# Wizards removed - print functionality moved to cycle model

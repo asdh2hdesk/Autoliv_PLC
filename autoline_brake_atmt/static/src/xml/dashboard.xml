@@ -164,17 +164,17 @@
                                             <br/>
                                             <span t-esc="state.last_cycle.cycle_number || ''"/>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <strong>Part Name:</strong>
                                             <br/>
                                             <span t-esc="state.last_cycle.part_name || ''"/>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-5">
                                             <strong>QR Code:</strong>
                                             <br/>
                                             <code t-esc="state.last_cycle.qr_code_data || ''"/>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <strong>Status:</strong>
                                             <br/>
                                             <t t-if="state.last_cycle.qr_code_scanned">
@@ -282,7 +282,7 @@
                         <table class="o_list_table table">
                             <thead>
                                 <tr>
-                                    <th>Time</th>
+                                    <th>Date / Time</th>
                                     <th>Status</th>
                                     <th>Cycle</th>
                                     <th>Part</th>
@@ -293,7 +293,7 @@
                                     <tr>
                                         <td>
                                             <t t-if="scan.scan_datetime">
-                                                <t t-esc="new Date(scan.scan_datetime).toLocaleTimeString()"/>
+                                                <t t-esc="new Date(scan.scan_datetime).toLocaleString()"/>
                                             </t>
                                         </td>
                                         <td>

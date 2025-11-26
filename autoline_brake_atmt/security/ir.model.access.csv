@@ -6,5 +6,3 @@ access_plc_workstation_manager,plc.workstation.manager,model_plc_workstation,bas
 access_qr_code_log_user,qr.code.log.user,model_qr_code_log,base.group_user,1,1,1,0
 access_qr_code_log_manager,qr.code.log.manager,model_qr_code_log,base.group_system,1,1,1,1
 access_dashboard_data_user,dashboard.data.user,model_dashboard_data,base.group_user,1,0,0,0
-access_plc_print_wizard_user,plc.print.wizard.user,model_plc_print_wizard,base.group_user,1,1,1,1
-access_plc_scan_wizard_user,plc.scan.wizard.user,model_plc_scan_wizard,base.group_user,1,1,1,1

@@ -65,7 +65,7 @@
                         </div>
                     </div>
                     <div class="text-end">
-                        <div class="dashboard-logo m-2">
+                        <div class="dashboard-logo ">
                             <img t-attf-src="/autoline_clutch_1/static/src/img/ASD_Logo_Main.png"
                                  alt="ASD Logo"
                                  style="max-height: 60px; max-width: 100%; object-fit: contain; border-radius:5px;"/>
@@ -75,7 +75,7 @@
                 </div>
 
                 <!-- Metrics Cards -->
-                <div class="o_dashboard_metrics o_clearfix">
+                <div class="o_dashboard_metrics">
                     <div class="o_metric_card o_metric_primary">
                         <div class="o_metric_content">
                             <h5>Total Cycles</h5>
@@ -164,17 +164,17 @@
                                             <br/>
                                             <span t-esc="state.last_cycle.cycle_number || ''"/>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <strong>Part Name:</strong>
                                             <br/>
                                             <span t-esc="state.last_cycle.part_name || ''"/>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <strong>QR Code:</strong>
                                             <br/>
                                             <code t-esc="state.last_cycle.qr_code_data || ''"/>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <strong>Status:</strong>
                                             <br/>
                                             <t t-if="state.last_cycle.qr_code_scanned">

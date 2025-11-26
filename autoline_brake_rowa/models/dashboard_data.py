@@ -16,6 +16,15 @@ class DashboardData(models.Model):
     # This is a virtual model for dashboard data aggregation
     # It doesn't create actual database tables
 
+    def _format_datetime(self, dt, fmt='%Y-%m-%d %H:%M:%S'):
+        """Format datetime to user timezone and return formatted string."""
+        if not dt:
+            return ''
+        localized_dt = fields.Datetime.context_timestamp(self, dt)
+        if fmt == 'iso':
+            return localized_dt.strftime('%Y-%m-%dT%H:%M:%S')
+        return localized_dt.strftime(fmt)
+
     @api.model
     def get_dashboard_metrics(self, date_from=None, date_to=None):
         """Get comprehensive dashboard metrics"""
@@ -92,7 +101,7 @@ class DashboardData(models.Model):
                 'id': scan.id,
                 'scan_reference': scan.scan_reference,
                 'scanned_data': scan.scanned_data[:32] if scan.scanned_data else '',
-                'scan_datetime': scan.scan_datetime.strftime('%Y-%m-%d %H:%M:%S') if scan.scan_datetime else '',
+                'scan_datetime': self._format_datetime(scan.scan_datetime),
                 'match_status': scan.match_status,
                 'cycle_number': scan.cycle_id.cycle_number if scan.cycle_id else '',
                 'part_name': scan.cycle_id.part_name if scan.cycle_id else '',
@@ -115,7 +124,7 @@ class DashboardData(models.Model):
             'cycle_number': last_cycle.cycle_number,
             'part_name': last_cycle.part_name,
             'qr_code_data': last_cycle.qr_code_data,
-            'cycle_datetime': last_cycle.cycle_datetime.strftime('%Y-%m-%d %H:%M:%S') if last_cycle.cycle_datetime else '',
+            'cycle_datetime': self._format_datetime(last_cycle.cycle_datetime),
             'qr_code_printed': last_cycle.qr_code_printed,
             'qr_code_scanned': last_cycle.qr_code_scanned,
             'qr_match_status': last_cycle.qr_match_status,
@@ -137,7 +146,8 @@ class DashboardData(models.Model):
         # Group by hour
         hourly_data = {}
         for cycle in cycles:
-            hour_key = cycle.cycle_datetime.strftime('%Y-%m-%d %H:00')
+            localized_dt = fields.Datetime.context_timestamp(self, cycle.cycle_datetime)
+            hour_key = localized_dt.strftime('%Y-%m-%dT%H:00:00')
             if hour_key not in hourly_data:
                 hourly_data[hour_key] = {
                     'total': 0,
@@ -207,7 +217,7 @@ class DashboardData(models.Model):
                 'part_name': cycle.part_name,
                 'barcode': cycle.qr_code_data or cycle.barcode or '',
                 'qr_code_data': cycle.qr_code_data or cycle.barcode or '',
-                'cycle_datetime': cycle.cycle_datetime.isoformat() if cycle.cycle_datetime else '',
+                'cycle_datetime': self._format_datetime(cycle.cycle_datetime, fmt='iso'),
                 'result': cycle.result,
                 'torque_nm': cycle.torque_nm,
                 'initial_position': cycle.initial_position,
@@ -287,7 +297,7 @@ class DashboardData(models.Model):
                 'code': workstation.code,
                 'plc_ip': workstation.plc_ip,
                 'connection_status': workstation.connection_status,
-                'last_connection': workstation.last_connection.isoformat() if workstation.last_connection else None,
+                'last_connection': self._format_datetime(workstation.last_connection, fmt='iso'),
                 'monitoring_active': workstation.monitoring_active,
                 'cycle_count': workstation.cycle_count,
             })
