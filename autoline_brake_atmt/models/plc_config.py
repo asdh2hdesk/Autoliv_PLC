@@ -14,16 +14,19 @@ class PlcWorkstation(models.Model):
 
     name = fields.Char(
         string='Workstation Name',
+        default='OP-60 BRAKE AT/MT EOL',
         required=True
     )
     code = fields.Char(
         string='Code',
         required=True,
+        default='BRAKE AT/MT PEDAL ASSY',
         help="Unique code for this workstation"
     )
     plc_ip = fields.Char(
         string='PLC IP Address',
         required=True,
+        default='192.168.2.40',
         help="IP address of the Mitsubishi PLC"
     )
     plc_port = fields.Integer(
@@ -212,8 +215,8 @@ class PlcWorkstation(models.Model):
         ('coils', 'Coils (Function Code 0x01)'),
         ('discrete_inputs', 'Discrete Inputs (Function Code 0x02)'),
         ('auto', 'Auto (Try Coils, fallback to Discrete Inputs)'),
-    ], string='M Bit Read Method', default='coils',
-        help="Method to use for reading M bits. For Mitsubishi FX5U with M0=8192 mapping, use Coils (Function Code 0x01). Default: Coils."
+    ], string='M Bit Read Method', default='auto',
+        help="Method to use for reading M bits. For Mitsubishi FX5U with M0=8192 mapping, use auto (Function Code 0x01). Default: auto."
     )
     
     # Monitoring

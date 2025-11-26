@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'AutoLiv BRAKE AT/MT',
+    'name': 'Autoline BRAKE AT/MT',
     'version': '18.0.1.0.6',
     'category': 'Manufacturing',
     'summary': 'Mitsubishi PLC Integration with ModbusTCP, QR Code Printing and Dashboard',

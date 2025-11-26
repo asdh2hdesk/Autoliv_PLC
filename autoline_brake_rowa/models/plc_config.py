@@ -14,15 +14,18 @@ class PlcWorkstation(models.Model):
 
     name = fields.Char(
         string='Workstation Name',
+        default='OP-60 BRAKE ROWA EOL',
         required=True
     )
     code = fields.Char(
         string='Code',
+        default='BRAKE ROWA PEDAL ASSY',
         required=True,
         help="Unique code for this workstation"
     )
     plc_ip = fields.Char(
         string='PLC IP Address',
+        default='192.168.2.46',
         required=True,
         help="IP address of the Mitsubishi PLC"
     )

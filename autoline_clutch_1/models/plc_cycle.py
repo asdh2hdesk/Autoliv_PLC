@@ -289,20 +289,27 @@ class PlcCycle(models.Model):
             raise UserError(_("Error generating QR code: %s") % str(e))
 
     def print_qr_code(self):
-        """Print QR code using Zebra printer"""
+        """Print QR code using Zebra printer - direct print without wizard"""
         self.ensure_one()
         if not self.qr_code_data:
             self.generate_qr_code_data()
         
-        # This will be implemented with Zebra printer integration
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Print QR Code'),
-            'res_model': 'plc.print.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_cycle_id': self.id}
-        }
+        if not self.workstation_id:
+            raise UserError(_('Workstation must be configured for printing'))
+        
+        # Print using the same method as auto-print
+        if self._auto_print_qr_code():
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Print Successful'),
+                    'message': _('QR code printed successfully!'),
+                    'type': 'success',
+                }
+            }
+        else:
+            raise UserError(_('Failed to print QR code'))
     
     def _auto_print_qr_code(self):
         """Auto-print QR code to Zebra printer after cycle OK"""
@@ -594,14 +601,49 @@ class PlcCycle(models.Model):
     def action_print_qr(self):
         """Action to print QR code"""
         return self.print_qr_code()
-
-    def action_scan_qr(self):
-        """Action to scan QR code"""
+    
+    def action_print_selected(self):
+        """Print QR codes for selected cycles using the same template as auto-print"""
+        if not self:
+            raise UserError(_('No cycles selected'))
+        
+        # Filter cycles that have workstation configured
+        cycles_with_workstation = self.filtered(lambda c: c.workstation_id)
+        if not cycles_with_workstation:
+            raise UserError(_('Selected cycles must have a workstation configured for printing'))
+        
+        success_count = 0
+        failed_cycles = []
+        
+        for cycle in cycles_with_workstation:
+            try:
+                # Generate QR code if not exists
+                if not cycle.qr_code_data:
+                    cycle.generate_qr_code_data()
+                
+                # Print using the same method as auto-print
+                if cycle._auto_print_qr_code():
+                    success_count += 1
+                else:
+                    failed_cycles.append(cycle.cycle_number)
+            except Exception as e:
+                _logger.error(f"Error printing cycle {cycle.cycle_number}: {e}")
+                failed_cycles.append(cycle.cycle_number)
+        
+        # Show notification
+        if failed_cycles:
+            message = _('Printed %d cycle(s) successfully. Failed: %s') % (success_count, ', '.join(failed_cycles))
+            message_type = 'warning'
+        else:
+            message = _('Successfully printed %d cycle(s)') % success_count
+            message_type = 'success'
+        
         return {
-            'type': 'ir.actions.act_window',
-            'name': _('Scan QR Code'),
-            'res_model': 'plc.scan.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_cycle_id': self.id}
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Print Results'),
+                'message': message,
+                'type': message_type,
+            }
         }

@@ -28,15 +28,15 @@
                 <form edit="false" string="PLC Workstation">
                     <header>
                         <button name="test_connection" string="Test Connection" type="object" class="btn-primary"/>
-                        <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>
-                        <button name="action_force_create_cycle" string="Force Create Cycle (Test)" type="object" class="btn-success"/>
-                        <button name="test_cycle_detection" string="Test Cycle Detection" type="object" class="btn-secondary"/>
-                        <button name="test_d_register_reading" string="Test D Registers" type="object" class="btn-secondary"/>
-                        <button name="test_plc_bit_access" string="Test Bit Access" type="object" class="btn-secondary"/>
-                        <button name="test_m_bit_as_discrete_input" string="Test as Discrete Input" type="object" class="btn-secondary"/>
-                        <button name="find_m221_address" string="Find M221 Address" type="object" class="btn-secondary"/>
-                        <button name="scan_for_active_bits" string="Scan for Active Bits" type="object" class="btn-secondary"/>
-                        <button name="continuous_bit_monitor" string="Continuous Monitor (30s)" type="object" class="btn-secondary"/>
+<!--                        <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>-->
+<!--                        <button name="action_force_create_cycle" string="Force Create Cycle (Test)" type="object" class="btn-success"/>-->
+<!--                        <button name="test_cycle_detection" string="Test Cycle Detection" type="object" class="btn-secondary"/>-->
+<!--                        <button name="test_d_register_reading" string="Test D Registers" type="object" class="btn-secondary"/>-->
+<!--                        <button name="test_plc_bit_access" string="Test Bit Access" type="object" class="btn-secondary"/>-->
+<!--                        <button name="test_m_bit_as_discrete_input" string="Test as Discrete Input" type="object" class="btn-secondary"/>-->
+<!--                        <button name="find_m221_address" string="Find M221 Address" type="object" class="btn-secondary"/>-->
+<!--                        <button name="scan_for_active_bits" string="Scan for Active Bits" type="object" class="btn-secondary"/>-->
+<!--                        <button name="continuous_bit_monitor" string="Continuous Monitor (30s)" type="object" class="btn-secondary"/>-->
                         <button name="start_continuous_monitoring" string="Start Monitoring" type="object" class="btn-success" modifiers="{'invisible': [('monitoring_active', '=', True)]}"/>
                         <button name="stop_continuous_monitoring" string="Stop Monitoring" type="object" class="btn-warning" modifiers="{'invisible': [('monitoring_active', '=', False)]}"/>
                         <field name="connection_status" widget="statusbar" statusbar_visible="connected,disconnected,error"/>

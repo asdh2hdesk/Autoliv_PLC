@@ -23,6 +23,7 @@
                     <field name="qr_match_status" widget="badge"/>
                     <field name="operator_id"/>
                     <field name="workstation_id"/>
+                    <button name="action_print_selected" string="Print" type="object" icon="fa-print" class="btn-primary" title="Print QR Code for selected cycles"/>
                 </list>
             </field>
         </record>
@@ -36,7 +37,7 @@
                     <header>
 <!--                        <button name="action_mark_ok" string="Mark OK" type="object" class="btn-primary" modifiers="{'invisible': [('result', '!=', 'pending')]}"/>-->
 <!--                        <button name="action_mark_nok" string="Mark NOK" type="object" class="btn-secondary" modifiers="{'invisible': [('result', '!=', 'pending')]}"/>-->
-                        <button name="action_print_qr" string="Print QR Code" type="object" class="btn-info"/>
+                        <button name="action_print_selected" string="Print QR Code" type="object" class="btn-info" icon="fa-print"/>
 <!--                        <button name="action_scan_qr" string="Scan QR Code" type="object" class="btn-warning"/>-->
                         <field name="result" widget="statusbar" statusbar_visible="ok,nok"/>
                     </header>

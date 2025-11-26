@@ -33,7 +33,6 @@
         'views/dashboard_views.xml',
         'views/manual_print.xml',
         'views/menu_views.xml',
-        'views/print_wizard_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
