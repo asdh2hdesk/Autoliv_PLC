@@ -27,6 +27,7 @@ class PLCMonitorService:
                     cls._instance.stop_events = {}  # Dictionary of workstation_id -> stop event
                     cls._instance.monitor_locks = {}  # Dictionary of workstation_id -> lock
                     cls._instance.last_states = {}  # Dictionary of workstation_id -> last PLC state
+                    cls._instance.last_cycle_events = {}  # workstation_id -> last cycle creation timestamp
         return cls._instance
     
     def start_monitoring(self, db_name, workstation_id):
@@ -113,6 +114,7 @@ class PLCMonitorService:
         _logger.info(f"PLC Monitor loop started for workstation {workstation_id}")
         
         scan_interval = 1.0  # Scan every 1 second (reduced frequency to avoid overwhelming PLC)
+        min_cycle_interval = 5.0  # Minimum seconds between cycles to avoid duplicate creations
         retry_delay = 5.0  # Retry after 5 seconds on error
         consecutive_errors = 0
         max_consecutive_errors = 10
@@ -272,6 +274,20 @@ class PLCMonitorService:
                                 _logger.info(f"[MONITOR] Rising edge detected: current_cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)}), last_cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)})")
                             
                             if rising_edge_detected:
+                                # Guard against duplicate creations caused by noisy bits / connection glitches
+                                now_ts = time.time()
+                                last_cycle_ts = self.last_cycle_events.get(workstation_id)
+                                if last_cycle_ts and (now_ts - last_cycle_ts) < min_cycle_interval:
+                                    _logger.warning(
+                                        "[CYCLE EVENT] ⚠️ Ignoring cycle trigger for workstation %s "
+                                        "because last cycle was created %.2f seconds ago (threshold %.2f s)",
+                                        workstation_id,
+                                        now_ts - last_cycle_ts,
+                                        min_cycle_interval
+                                    )
+                                    rising_edge_detected = False
+                                else:
+                                    self.last_cycle_events[workstation_id] = now_ts
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
                                 _logger.info(f"[CYCLE EVENT] ⚡ {trigger_reason} RISING EDGE detected for workstation {workstation_id}")
                                 if use_fallback:
