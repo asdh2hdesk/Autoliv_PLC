@@ -106,6 +106,30 @@ class QrCodeLog(models.Model):
         _logger.info(f"[QR LOG] Created {len(records)} scan log record(s)")
         return records
 
+    def _sanitize_scanned_data(self, scanned_data):
+        """Remove non-printable characters and trim to 32 chars (QR data length)."""
+        if not scanned_data:
+            return ''
+        # Keep printable characters only (drops NULL/CR/LF etc.), but preserve spaces
+        sanitized = ''.join(ch for ch in scanned_data if ch.isprintable())
+        original_len = len(sanitized)
+        sanitized = sanitized.strip()
+        if len(sanitized) > 32:
+            _logger.info(
+                "[QR LOG] Trimming scanned data from %d to 32 characters (before trim: %s)",
+                len(sanitized),
+                sanitized
+            )
+            sanitized = sanitized[:32]
+        if original_len != len(sanitized):
+            _logger.info(
+                "[QR LOG] Sanitized scanned data (len %d -> %d): %s",
+                original_len,
+                len(sanitized),
+                sanitized
+            )
+        return sanitized
+
     def _parse_scanned_data(self, scanned_data):
         """Parse scanned QR code data (new format: 32-char string)"""
         # New format is a 32-character string, not JSON
@@ -120,8 +144,10 @@ class QrCodeLog(models.Model):
             }
         except (json.JSONDecodeError, TypeError):
             # Not JSON, treat as 32-character string format
-            # Store as-is, will be matched directly with qr_code_data
-            return {}
+            sanitized = self._sanitize_scanned_data(scanned_data)
+            return {
+                'barcode': sanitized,
+            }
 
     def find_matching_cycle(self):
         """Find matching cycle record (new format: match by qr_code_data string)"""
@@ -133,7 +159,8 @@ class QrCodeLog(models.Model):
             _logger.warning(f"[QR LOG] No scanned data for log ID {self.id}")
             return False
         
-        scanned_string = self.scanned_data.strip()
+        scanned_string = self._sanitize_scanned_data(self.scanned_data)
+        self.scanned_data = scanned_string
         _logger.info(f"[QR LOG] Finding match for scanned data: {scanned_string[:32]}... (Log ID: {self.id})")
         
         # Try to find cycle by QR code data (32-char string)
@@ -170,32 +197,43 @@ class QrCodeLog(models.Model):
             
             _logger.info(f"[QR LOG] ✅ Matched and updated cycle {cycle.cycle_number}")
             return True
-        else:
-            _logger.warning(f"[QR LOG] No cycle found matching QR code: {scanned_string[:32]}...")
-            
-            # Try old format matching (by cycle_number or barcode) for backward compatibility
-            if self.cycle_number or self.barcode:
-                domain = []
-                if self.cycle_number:
-                    domain.append(('cycle_number', '=', self.cycle_number))
-                if self.barcode:
-                    domain.append(('barcode', '=', self.barcode))
-                
-                if domain:
-                    cycle = self.env['plc.cycle'].search(domain, limit=1)
-                    if cycle:
-                        self.cycle_id = cycle.id
-                        self.match_status = 'matched'
-                        self.match_message = f"Successfully matched with cycle {cycle.cycle_number}"
-                        cycle.qr_code_scanned = True
-                        cycle.scan_datetime = self.scan_datetime
-                        _logger.info(f"[QR LOG] Matched via old format: cycle {cycle.cycle_number}")
-                        return True
-            
-            self.match_status = 'not_found'
-            self.match_message = "No matching cycle found in database"
-            _logger.warning(f"[QR LOG] ❌ No match found for scan log ID {self.id}")
-            return False
+        _logger.warning(f"[QR LOG] No cycle found matching QR code: {scanned_string[:32]}...")
+        
+        # Fallback 1: match by barcode field (same as QR data)
+        barcode_cycle = self.env['plc.cycle'].search([
+            ('barcode', '=', scanned_string)
+        ], limit=1)
+        if barcode_cycle:
+            self.cycle_id = barcode_cycle.id
+            self.match_status = 'matched'
+            self.match_message = f"Matched via barcode with cycle {barcode_cycle.cycle_number}"
+            barcode_cycle.qr_code_scanned = True
+            barcode_cycle.scan_datetime = self.scan_datetime
+            barcode_cycle.qr_match_status = 'matched'
+            barcode_cycle.qr_scan_datetime = self.scan_datetime
+            _logger.info(f"[QR LOG] ✅ Matched via barcode fallback: {barcode_cycle.cycle_number}")
+            return True
+        
+        # Fallback 2: legacy data (cycle number parsed from JSON, if any)
+        if self.cycle_number:
+            legacy_cycle = self.env['plc.cycle'].search([
+                ('cycle_number', '=', self.cycle_number)
+            ], limit=1)
+            if legacy_cycle:
+                self.cycle_id = legacy_cycle.id
+                self.match_status = 'matched'
+                self.match_message = f"Matched via legacy cycle number {legacy_cycle.cycle_number}"
+                legacy_cycle.qr_code_scanned = True
+                legacy_cycle.scan_datetime = self.scan_datetime
+                legacy_cycle.qr_match_status = 'matched'
+                legacy_cycle.qr_scan_datetime = self.scan_datetime
+                _logger.info(f"[QR LOG] ✅ Matched via legacy fallback: {legacy_cycle.cycle_number}")
+                return True
+        
+        self.match_status = 'not_found'
+        self.match_message = "No matching cycle found in database"
+        _logger.warning(f"[QR LOG] ❌ No match found for scan log ID {self.id}")
+        return False
 
     def action_find_match(self):
         """Action to find matching cycle"""
