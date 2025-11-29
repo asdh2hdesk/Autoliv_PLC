@@ -67,6 +67,7 @@
                                 <field name="part_no"/>
                                 <field name="revision"/>
                                 <field name="vendor_code"/>
+                                <field name="serial_counter_start"/>
                             </group>
                         </group>
                         <group string="Zebra Printer Configuration">

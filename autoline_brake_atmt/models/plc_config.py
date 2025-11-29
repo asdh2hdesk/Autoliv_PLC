@@ -148,6 +148,16 @@ class PlcWorkstation(models.Model):
         string='Default Vendor Code',
         help="Fallback vendor code when variant specific value is empty"
     )
+    serial_counter_start_at = fields.Integer(
+        string='Serial Number Counter Start (AT)',
+        default=1,
+        help="Starting value for AT variant serial number sequence. Serial numbers will start from this value (e.g., if set to 100, first AT serial will be 000100)"
+    )
+    serial_counter_start_mt = fields.Integer(
+        string='Serial Number Counter Start (MT)',
+        default=1,
+        help="Starting value for MT variant serial number sequence. Serial numbers will start from this value (e.g., if set to 100, first MT serial will be 000100)"
+    )
     
     # CLUTCH Machine Register Mappings (M bits - coils)
     # Note: These are the PLC M bit numbers (M20, M201, etc.)

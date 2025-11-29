@@ -68,12 +68,14 @@
                                 <field name="part_no_at"/>
                                 <field name="revision_at"/>
                                 <field name="vendor_code_at"/>
+                                <field name="serial_counter_start_at"/>
                             </group>
                             <group string="Brake-MT Variant">
                                 <field name="part_name_mt"/>
                                 <field name="part_no_mt"/>
                                 <field name="revision_mt"/>
                                 <field name="vendor_code_mt"/>
+                                <field name="serial_counter_start_mt"/>
                             </group>
                             <group string="Fallback Defaults">
                                 <field name="part_no"/>

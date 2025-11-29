@@ -106,6 +106,11 @@ class PlcWorkstation(models.Model):
         string='Vendor Code',
         help="Vendor code for QR code generation"
     )
+    serial_counter_start = fields.Integer(
+        string='Serial Number Counter Start',
+        default=1,
+        help="Starting value for serial number sequence. Serial numbers will start from this value (e.g., if set to 100, first serial will be 000100)"
+    )
     
     # CLUTCH Machine Register Mappings (M bits - coils)
     # Note: These are the PLC M bit numbers (M20, M201, etc.)

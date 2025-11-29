@@ -201,12 +201,19 @@ class PlcCycle(models.Model):
         mfg_date = now.strftime('%m%y')  # MMYY format
         
         # Generate serial number (6 digits) from sequence
-        serial_no = self.env['ir.sequence'].next_by_code('plc.serial.number') or '000001'
+        # Check if workstation has a counter start value and ensure sequence starts from there
+        counter_start = workstation.serial_counter_start or 1
+        sequence = self.env['ir.sequence'].search([('code', '=', 'plc.serial.number')], limit=1)
+        if sequence and sequence.number_next < counter_start:
+            # Set sequence to start from counter_start if it's behind
+            sequence.write({'number_next': counter_start})
+        
+        serial_no = self.env['ir.sequence'].next_by_code('plc.serial.number') or str(counter_start).zfill(6)
         # Ensure serial number is 6 digits
         serial_no = serial_no.zfill(6)[:6]
         
         # Calculate available length for part_no
-        # Total: 32 chars = part_no + revision(1) + vendor_code + mfg_date(4) + serial_no(6)
+        # Total: 32 chars = part_no + revision(2) + vendor_code + mfg_date(4) + serial_no(6)
         # So: part_no + vendor_code = 32 - 1 - 4 - 6 = 21 chars
         # We'll pad/truncate as needed
         

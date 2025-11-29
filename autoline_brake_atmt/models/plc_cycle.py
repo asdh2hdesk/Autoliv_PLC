@@ -215,10 +215,18 @@ class PlcCycle(models.Model):
         variant_type = self.variant_type or 'mt'
         if variant_type.lower() == 'at':
             sequence_code = 'plc.serial.number.at'
+            counter_start = workstation.serial_counter_start_at or 1
         else:  # MT or default
             sequence_code = 'plc.serial.number.mt'
+            counter_start = workstation.serial_counter_start_mt or 1
         
-        serial_no = self.env['ir.sequence'].next_by_code(sequence_code) or '000001'
+        # Check if workstation has a counter start value and ensure sequence starts from there
+        sequence = self.env['ir.sequence'].search([('code', '=', sequence_code)], limit=1)
+        if sequence and sequence.number_next < counter_start:
+            # Set sequence to start from counter_start if it's behind
+            sequence.write({'number_next': counter_start})
+        
+        serial_no = self.env['ir.sequence'].next_by_code(sequence_code) or str(counter_start).zfill(6)
         # Ensure serial number is 6 digits
         serial_no = serial_no.zfill(6)[:6]
         
