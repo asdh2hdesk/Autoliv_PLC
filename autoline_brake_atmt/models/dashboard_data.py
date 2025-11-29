@@ -28,12 +28,48 @@ class DashboardData(models.Model):
     @api.model
     def get_dashboard_metrics(self, date_from=None, date_to=None):
         """Get comprehensive dashboard metrics"""
-        if not date_from:
-            date_from = fields.Datetime.now() - timedelta(days=30)
-        if not date_to:
-            date_to = fields.Datetime.now()
+        # Convert string dates to datetime objects if provided
+        if date_from:
+            if isinstance(date_from, str):
+                # Try parsing common datetime formats
+                try:
+                    # Try Odoo format: 'YYYY-MM-DD HH:MM:SS'
+                    date_from = datetime.strptime(date_from, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    try:
+                        # Try ISO format: 'YYYY-MM-DDTHH:MM:SS'
+                        date_from = datetime.fromisoformat(date_from.replace(' ', 'T'))
+                    except ValueError:
+                        # Try date only: 'YYYY-MM-DD'
+                        date_from = datetime.strptime(date_from, '%Y-%m-%d')
+            # Convert datetime to string for Odoo domain (Odoo expects string format)
+            if isinstance(date_from, datetime):
+                date_from = fields.Datetime.to_string(date_from)
+        else:
+            date_from = fields.Datetime.to_string(fields.Datetime.now() - timedelta(days=30))
         
-        # Get cycle data
+        if date_to:
+            if isinstance(date_to, str):
+                # Try parsing common datetime formats
+                try:
+                    # Try Odoo format: 'YYYY-MM-DD HH:MM:SS'
+                    date_to = datetime.strptime(date_to, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    try:
+                        # Try ISO format: 'YYYY-MM-DDTHH:MM:SS'
+                        date_to = datetime.fromisoformat(date_to.replace(' ', 'T'))
+                    except ValueError:
+                        # Try date only: 'YYYY-MM-DD' - set to end of day
+                        date_to = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+            # Ensure date_to includes the full day (end of day) if it's at midnight
+            if isinstance(date_to, datetime):
+                if date_to.hour == 0 and date_to.minute == 0 and date_to.second == 0:
+                    date_to = date_to + timedelta(days=1) - timedelta(seconds=1)
+                date_to = fields.Datetime.to_string(date_to)
+        else:
+            date_to = fields.Datetime.to_string(fields.Datetime.now())
+        
+        # Get cycle data - Odoo domain works with string dates in 'YYYY-MM-DD HH:MM:SS' format
         cycle_domain = [
             ('cycle_datetime', '>=', date_from),
             ('cycle_datetime', '<=', date_to)

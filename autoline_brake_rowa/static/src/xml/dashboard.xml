@@ -39,12 +39,29 @@
             </t>
             <t t-if="!state.loading">
                 <div class="o_dashboard_header">
-                    <h1>AutoLine PLC Dashboard</h1>
-<!--                    <div style="display: inline-block; margin-left: 10px;">-->
-<!--                        <span t-if="state.scanner_ready" style="color: #4caf50; font-size: 14px;">✓ Scanner Ready</span>-->
-<!--                        <span t-else="" style="color: #888; font-size: 14px;">Scanner: Click to activate</span>-->
-<!--                    </div>-->
-<!--                    <button class="btn btn-sm btn-primary" t-on-click="onRefresh">Refresh</button>-->
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <h1 style="margin: 0;">AutoLine PLC Dashboard</h1>
+                        <div class="date-filter-buttons" style="display: flex; gap: 10px;">
+                            <button 
+                                class="btn btn-sm" 
+                                t-att-class="state.date_filter === 'today' ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => this.onDateFilterChange('today')">
+                                Today
+                            </button>
+                            <button 
+                                class="btn btn-sm" 
+                                t-att-class="state.date_filter === 'week' ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => this.onDateFilterChange('week')">
+                                This Week
+                            </button>
+                            <button 
+                                class="btn btn-sm" 
+                                t-att-class="state.date_filter === 'month' ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => this.onDateFilterChange('month')">
+                                This Month
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="o_chart_body">
                         <div id="workstation-status">
@@ -54,7 +71,19 @@
                                     <div class="workstation-info">
                                         <strong t-esc="workstation.name"/>
                                         <small class="text-muted">
-                                            Last:
+                                            <t t-if="workstation.monitoring_active and workstation.connection_status === 'connected'">
+                                                <span class="monitoring-status ready" style="color: #4caf50; font-weight: bold;">✓ Ready for Cycle</span>
+                                            </t>
+                                            <t t-elif="workstation.monitoring_active and workstation.connection_status !== 'connected'">
+                                                <span class="monitoring-status waiting" style="color: #ff9800; font-weight: bold;">⏳ Monitoring (Waiting for Connection)</span>
+                                            </t>
+                                            <t t-elif="!workstation.monitoring_active and workstation.is_active">
+                                                <span class="monitoring-status inactive" style="color: #f44336; font-weight: bold;">⚠ Monitoring Not Started</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="monitoring-status disabled" style="color: #888; font-weight: bold;">○ Inactive</span>
+                                            </t>
+                                            | Last:
                                             <t t-esc="workstation.last_connection ? new Date(workstation.last_connection).toLocaleTimeString() : 'Never'"/>
                                             | Cycles:
                                             <t t-esc="workstation.cycle_count || 0"/>

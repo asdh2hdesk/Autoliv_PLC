@@ -65,6 +65,36 @@
     margin: 0;
 }
 
+.date-filter-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.date-filter-buttons .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.date-filter-buttons .btn-primary {
+    background: rgba(33, 150, 243, 0.8);
+    color: white;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
+}
+
+.date-filter-buttons .btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(0, 0, 0, 0.8);
+}
+
+.date-filter-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 /* Metrics Cards */
 .o_dashboard_metrics {
     display: grid;
@@ -308,6 +338,45 @@
 
 .workstation-info strong {
     color: black;
+}
+
+.monitoring-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-size: 12px;
+}
+
+.monitoring-status.ready {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid rgba(76, 175, 80, 0.4);
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+.monitoring-status.waiting {
+    background: rgba(255, 152, 0, 0.2);
+    border: 1px solid rgba(255, 152, 0, 0.4);
+}
+
+.monitoring-status.inactive {
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+}
+
+.monitoring-status.disabled {
+    background: rgba(128, 128, 128, 0.2);
+    border: 1px solid rgba(128, 128, 128, 0.4);
+}
+
+@keyframes pulse-green {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(76, 175, 80, 0);
+    }
+}
     font-size: 16px;
     font-weight: 600;
     display: block;

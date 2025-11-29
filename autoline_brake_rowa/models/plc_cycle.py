@@ -597,13 +597,44 @@ class PlcCycle(models.Model):
 
     @api.model
     def get_dashboard_data(self, date_from=None, date_to=None):
-        """Get data for dashboard"""
+        """Get data for dashboard - if no dates provided, shows all data"""
         domain = []
+        
+        # Convert string dates to datetime if provided
         if date_from:
+            if isinstance(date_from, str):
+                # Try parsing common datetime formats
+                try:
+                    # Try Odoo format: 'YYYY-MM-DD HH:MM:SS'
+                    date_from = datetime.strptime(date_from, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    try:
+                        # Try ISO format: 'YYYY-MM-DDTHH:MM:SS'
+                        date_from = datetime.fromisoformat(date_from.replace(' ', 'T'))
+                    except ValueError:
+                        # Try date only: 'YYYY-MM-DD'
+                        date_from = datetime.strptime(date_from, '%Y-%m-%d')
             domain.append(('cycle_datetime', '>=', date_from))
+        
         if date_to:
+            if isinstance(date_to, str):
+                # Try parsing common datetime formats
+                try:
+                    # Try Odoo format: 'YYYY-MM-DD HH:MM:SS'
+                    date_to = datetime.strptime(date_to, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    try:
+                        # Try ISO format: 'YYYY-MM-DDTHH:MM:SS'
+                        date_to = datetime.fromisoformat(date_to.replace(' ', 'T'))
+                    except ValueError:
+                        # Try date only: 'YYYY-MM-DD' - set to end of day
+                        date_to = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+            # Ensure date_to includes the full day (end of day) if it's at midnight
+            if isinstance(date_to, datetime) and date_to.hour == 0 and date_to.minute == 0 and date_to.second == 0:
+                date_to = date_to + timedelta(days=1) - timedelta(seconds=1)
             domain.append(('cycle_datetime', '<=', date_to))
         
+        # If no dates provided, show all data (no date filter)
         cycles = self.search(domain)
         
         return {

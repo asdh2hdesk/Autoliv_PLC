@@ -20,6 +20,7 @@ export class PlcDashboard extends Component {
             loading: true,
             scanner_ready: false,
             scan_result: null,
+            date_filter: 'today', // 'today', 'week', 'month'
         });
         
         this.chart = null;
@@ -67,23 +68,59 @@ export class PlcDashboard extends Component {
         });
     }
 
-    async _loadDashboardData() {
+    _getDateRange(filter) {
         const now = new Date();
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const date_from = yesterday.toISOString().slice(0, 19).replace('T', ' ');
-        const date_to = now.toISOString().slice(0, 19).replace('T', ' ');
+        let date_from, date_to;
+        
+        switch(filter) {
+            case 'today':
+                // Today: from start of today to now
+                date_from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                date_to = now;
+                break;
+            case 'week':
+                // This week: from start of week (Monday) to now
+                const dayOfWeek = now.getDay();
+                const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
+                date_from = new Date(now.getFullYear(), now.getMonth(), diff, 0, 0, 0);
+                date_to = now;
+                break;
+            case 'month':
+                // This month: from start of month to now
+                date_from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+                date_to = now;
+                break;
+            default:
+                // Default to today
+                date_from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                date_to = now;
+        }
+        
+        return {
+            date_from: date_from.toISOString().slice(0, 19).replace('T', ' '),
+            date_to: date_to.toISOString().slice(0, 19).replace('T', ' ')
+        };
+    }
+
+    async _loadDashboardData() {
+        const dateRange = this._getDateRange(this.state.date_filter);
         
         try {
             const data = await this.orm.call(
                 'dashboard.data',
                 'get_dashboard_metrics',
-                [date_from, date_to]
+                [dateRange.date_from, dateRange.date_to]
             );
             this.state.dashboard_data = data;
             this._updateMetrics();
         } catch (error) {
             console.error('Error loading dashboard data:', error);
         }
+    }
+
+    onDateFilterChange(filter) {
+        this.state.date_filter = filter;
+        this._loadDashboardData();
     }
 
     _updateMetrics() {
@@ -224,7 +261,7 @@ export class PlcDashboard extends Component {
             const workstations = await this.orm.searchRead(
                 'plc.workstation',
                 [],
-                ['name', 'connection_status', 'last_connection', 'cycle_count']
+                ['name', 'connection_status', 'last_connection', 'cycle_count', 'monitoring_active', 'is_active']
             );
             // Ensure each workstation has an id for the template key
             this.state.workstations = (workstations || []).map((ws, index) => ({
