@@ -222,9 +222,16 @@ class PlcCycle(models.Model):
         
         # Check if workstation has a counter start value and ensure sequence starts from there
         sequence = self.env['ir.sequence'].search([('code', '=', sequence_code)], limit=1)
-        if sequence and sequence.number_next < counter_start:
-            # Set sequence to start from counter_start if it's behind
-            sequence.write({'number_next': counter_start})
+        if sequence:
+            # If counter_start is explicitly set and different from current sequence, reset it
+            # This allows resetting counters by changing the counter_start value
+            if variant_type.lower() == 'at' and workstation.serial_counter_start_at and sequence.number_next != counter_start:
+                sequence.write({'number_next': counter_start})
+            elif variant_type.lower() != 'at' and workstation.serial_counter_start_mt and sequence.number_next != counter_start:
+                sequence.write({'number_next': counter_start})
+            # If sequence is behind counter_start, update it
+            elif sequence.number_next < counter_start:
+                sequence.write({'number_next': counter_start})
         
         serial_no = self.env['ir.sequence'].next_by_code(sequence_code) or str(counter_start).zfill(6)
         # Ensure serial number is 6 digits

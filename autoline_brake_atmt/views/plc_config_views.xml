@@ -25,7 +25,7 @@
             <field name="name">plc.workstation.form</field>
             <field name="model">plc.workstation</field>
             <field name="arch" type="xml">
-                <form edit="false" string="PLC Workstation">
+                <form string="PLC Workstation">
                     <header>
                         <button name="test_connection" string="Test Connection" type="object" class="btn-primary"/>
 <!--                        <button name="action_read_plc_data" string="Read PLC Data" type="object" class="btn-info"/>-->
@@ -44,17 +44,17 @@
                     <sheet>
                         <div class="oe_title">
                             <h1>
-                                <field name="name" placeholder="Workstation Name"/>
+                                <field name="name" placeholder="Workstation Name" readonly="1"/>
                             </h1>
                         </div>
                         <group>
                             <group>
-                                <field name="code"/>
-                                <field name="is_active" widget="boolean_toggle"/>
-                                <field name="plc_ip"/>
-                                <field name="plc_port"/>
-                                <field name="unit_id"/>
-                                <field name="timeout"/>
+                                <field name="code" readonly="1"/>
+                                <field name="is_active" widget="boolean_toggle" readonly="1"/>
+                                <field name="plc_ip" readonly="1"/>
+                                <field name="plc_port" readonly="1"/>
+                                <field name="unit_id" readonly="1"/>
+                                <field name="timeout" readonly="1"/>
                                 <field name="monitoring_active" readonly="1"/>
                             </group>
                             <group>
@@ -64,68 +64,68 @@
                         </group>
                         <group string="QR Code Configuration">
                             <group string="Brake-AT Variant">
-                                <field name="part_name_at"/>
-                                <field name="part_no_at"/>
-                                <field name="revision_at"/>
-                                <field name="vendor_code_at"/>
+                                <field name="part_name_at" readonly="1"/>
+                                <field name="part_no_at" readonly="1"/>
+                                <field name="revision_at" readonly="1"/>
+                                <field name="vendor_code_at" readonly="1"/>
                                 <field name="serial_counter_start_at"/>
                             </group>
                             <group string="Brake-MT Variant">
-                                <field name="part_name_mt"/>
-                                <field name="part_no_mt"/>
-                                <field name="revision_mt"/>
-                                <field name="vendor_code_mt"/>
+                                <field name="part_name_mt" readonly="1"/>
+                                <field name="part_no_mt" readonly="1"/>
+                                <field name="revision_mt" readonly="1"/>
+                                <field name="vendor_code_mt" readonly="1"/>
                                 <field name="serial_counter_start_mt"/>
                             </group>
                             <group string="Fallback Defaults">
-                                <field name="part_no"/>
-                                <field name="revision"/>
-                                <field name="vendor_code"/>
+                                <field name="part_no" readonly="1"/>
+                                <field name="revision" readonly="1"/>
+                                <field name="vendor_code" readonly="1"/>
                             </group>
                         </group>
                         <group string="Zebra Printer Configuration">
                             <group>
-                                <field name="printer_type"/>
-                                <field name="printer_usb_name" modifiers="{'invisible': [('printer_type', '!=', 'usb')], 'required': [('printer_type', '=', 'usb')]}"/>
-                                <field name="printer_ip" modifiers="{'invisible': [('printer_type', '!=', 'network')], 'required': [('printer_type', '=', 'network')]}"/>
-                                <field name="printer_port" modifiers="{'invisible': [('printer_type', '!=', 'network')]}"/>
+                                <field name="printer_type" readonly="1"/>
+                                <field name="printer_usb_name" readonly="1" modifiers="{'invisible': [('printer_type', '!=', 'usb')], 'required': [('printer_type', '=', 'usb')]}"/>
+                                <field name="printer_ip" readonly="1" modifiers="{'invisible': [('printer_type', '!=', 'network')], 'required': [('printer_type', '=', 'network')]}"/>
+                                <field name="printer_port" readonly="1" modifiers="{'invisible': [('printer_type', '!=', 'network')]}"/>
                             </group>
                         </group>
                         <notebook>
                             <page string="Modbus Registers" name="registers">
                         <group string="Cycle Status Bits (M bits)">
                             <group>
-                                <field name="m_bit_read_method"/>
-                                <field name="m_bit_address_offset"/>
-                                <field name="part_presence_bit"/>
-                                <field name="part_at_bit"/>
-                                <field name="cycle_start_bit"/>
-                                <field name="cycle_complete_bit"/>
-                                <field name="cycle_ok_bit"/>
-                                <field name="cycle_nok_bit"/>
+                                <field name="m_bit_read_method" readonly="1"/>
+                                <field name="m_bit_address_offset" readonly="1"/>
+                                <field name="part_presence_bit" readonly="1"/>
+                                <field name="part_at_bit" readonly="1"/>
+                                <field name="cycle_start_bit" readonly="1"/>
+                                <field name="cycle_complete_bit" readonly="1"/>
+                                <field name="cycle_ok_bit" readonly="1"/>
+                                <field name="cycle_nok_bit" readonly="1"/>
                             </group>
                         </group>
                                 <group string="Brake Machine Registers (D registers)">
                                     <group>
-                                        <field name="torque_register"/>
-                                        <field name="initial_position_register"/>
-                                        <field name="final_position_register"/>
+                                        <field name="torque_register" readonly="1"/>
+                                        <field name="initial_position_register" readonly="1"/>
+                                        <field name="final_position_register" readonly="1"/>
                                     </group>
                                     <group>
-                                        <field name="load_cell_register"/>
-                                        <field name="cycle_time_register"/>
-                                        <field name="forward_load_register"/>
+                                        <field name="load_cell_register" readonly="1"/>
+                                        <field name="cycle_time_register" readonly="1"/>
+                                        <field name="forward_load_register" readonly="1"/>
                                     </group>
                                 </group>
                                 <group string="Legacy Registers">
                                     <group>
-                                        <field name="cycle_start_register"/>
-                                        <field name="cycle_complete_register"/>
-                                        <field name="result_register"/>
+                                        <field name="cycle_start_register" readonly="1"/>
+                                        <field name="cycle_complete_register" readonly="1"/>
+                                        <field name="result_register" readonly="1"/>
                                     </group>
                                     <group>
-                                        <field name="barcode_register_start"/>
-                                        <field name="barcode_length"/>
+                                        <field name="barcode_register_start" readonly="1"/>
+                                        <field name="barcode_length" readonly="1"/>
                                     </group>
                                 </group>
                             </page>
