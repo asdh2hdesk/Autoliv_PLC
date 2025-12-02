@@ -232,6 +232,7 @@
                             <table class="o_list_table table" style="min-width: 1200px;">
                                 <thead>
                                     <tr>
+                                        <th>Variant</th>
                                         <th>Barcode (QR Code)</th>
                                         <th>Date / Time</th>
                                         <th>Torque (Nm)</th>
@@ -255,6 +256,11 @@
                                                 <t t-if="cycle.cycle_datetime">
                                                     <t t-esc="new Date(cycle.cycle_datetime).toISOString().slice(0, 19).replace('T', ' ')"/>
                                                 </t>
+                                            </td>
+                                            <td>
+                                                <span t-if="cycle.variant_type === 'at'" class="badge-custom badge-info">AT</span>
+                                                <span t-elif="cycle.variant_type === 'mt'" class="badge-custom badge-info">MT</span>
+                                                <span t-else="" class="badge-custom badge-pending">-</span>
                                             </td>
                                             <td t-esc="cycle.torque_nm ? cycle.torque_nm.toFixed(2) : '0.00'"/>
                                             <td t-esc="cycle.initial_position ? cycle.initial_position.toFixed(2) : '0.00'"/>
@@ -293,7 +299,7 @@
                                     </t>
                                     <t t-if="!state.recent_cycles || state.recent_cycles.length === 0">
                                         <tr>
-                                            <td colspan="11" class="text-center text-muted">No cycles yet</td>
+                                            <td colspan="12" class="text-center text-muted">No cycles yet</td>
                                         </tr>
                                     </t>
                                 </tbody>

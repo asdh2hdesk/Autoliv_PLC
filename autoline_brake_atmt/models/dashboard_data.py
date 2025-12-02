@@ -263,6 +263,7 @@ class DashboardData(models.Model):
                 'qr_printed': cycle.qr_code_printed,
                 'qr_scanned': cycle.qr_code_scanned,
                 'qr_match_status': cycle.qr_match_status,
+                'variant_type': cycle.variant_type or '',
                 'operator': cycle.operator_id.name if cycle.operator_id else '',
                 'workstation': cycle.workstation_id.name if cycle.workstation_id else '',
             })
