@@ -66,18 +66,6 @@
                             <group>
                                 <field name="default_variant_type" readonly="1"/>
                             </group>
-                            <group string="Brake-AT Variant">
-                                <field name="part_name_at" readonly="1"/>
-                                <field name="part_no_at" readonly="1"/>
-                                <field name="revision_at" readonly="1"/>
-                                <field name="vendor_code_at" readonly="1"/>
-                            </group>
-                            <group string="Brake-MT Variant">
-                                <field name="part_name_mt" readonly="1"/>
-                                <field name="part_no_mt" readonly="1"/>
-                                <field name="revision_mt" readonly="1"/>
-                                <field name="vendor_code_mt" readonly="1"/>
-                            </group>
                             <group string="Brake-Rowaa Variant">
                                 <field name="part_name_rowaa" readonly="1"/>
                                 <field name="part_no_rowaa" readonly="1"/>
@@ -106,7 +94,6 @@
                                 <field name="m_bit_read_method" readonly="1"/>
                                 <field name="m_bit_address_offset" readonly="1"/>
                                 <field name="part_presence_bit" readonly="1"/>
-                                <field name="part_at_bit" readonly="1"/>
                                 <field name="cycle_start_bit" readonly="1"/>
                                 <field name="cycle_complete_bit" readonly="1"/>
                                 <field name="cycle_ok_bit" readonly="1"/>

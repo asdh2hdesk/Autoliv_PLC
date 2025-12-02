@@ -106,54 +106,16 @@ class PlcWorkstation(models.Model):
         help="Number of characters in barcode"
     )
     
-    # QR Code Configuration (variant specific)
+    # QR Code Configuration (ROWA variant only)
     default_variant_type = fields.Selection([
-        ('mt', 'Brake-MT'),
-        ('at', 'Brake-AT'),
         ('rowaa', 'Brake-Rowaa'),
     ], string='Default Variant Type',
-        default='mt',
-        help="Fallback variant when AT/MT sensor bit is unavailable. Set to 'Brake-Rowaa' for single-variant machines.")
-    part_name_at = fields.Char(
-        string='Part Name (Brake-AT)',
-        default='BRAKE-AT',
-        help="Part description used when AT sensor bit is ON"
-    )
-    part_no_at = fields.Char(
-        string='Part Number (Brake-AT)',
-        help="Part number used for QR code generation when AT variant runs"
-    )
-    revision_at = fields.Char(
-        string='Revision (Brake-AT)',
-        size=2,
-        help="Revision character for Brake-AT variant"
-    )
-    vendor_code_at = fields.Char(
-        string='Vendor Code (Brake-AT)',
-        help="Vendor code used for Brake-AT variant"
-    )
-    part_name_mt = fields.Char(
-        string='Part Name (Brake-MT)',
-        default='BRAKE-MT',
-        help="Part description used when AT sensor bit is OFF (MT variant)"
-    )
-    part_no_mt = fields.Char(
-        string='Part Number (Brake-MT)',
-        help="Part number used for QR code generation when MT variant runs"
-    )
-    revision_mt = fields.Char(
-        string='Revision (Brake-MT)',
-        size=2,
-        help="Revision character for Brake-MT variant"
-    )
-    vendor_code_mt = fields.Char(
-        string='Vendor Code (Brake-MT)',
-        help="Vendor code used for Brake-MT variant"
-    )
+        default='rowaa',
+        help="Variant type for ROWA machine. Only ROWA variant is processed.")
     part_name_rowaa = fields.Char(
         string='Part Name (Brake-Rowaa)',
-        default='BRAKE-ROWAA',
-        help="Part description used for Brake-Rowaa single-variant machines"
+        default='BRAKE-ROWA',
+        help="Part description used for Brake-Rowaa variant"
     )
     part_no_rowaa = fields.Char(
         string='Part Number (Brake-Rowaa)',
@@ -200,11 +162,6 @@ class PlcWorkstation(models.Model):
         string='Part Presence Bit (M16)',
         default=16,
         help="M bit number for part presence detection (M16). Actual Modbus address = this value + offset."
-    )
-    part_at_bit = fields.Integer(
-        string='AT Variant Sensor Bit (M20)',
-        default=20,
-        help="M bit number that indicates Brake-AT variant (ON=AT, OFF=MT). Leave empty for single-variant machines."
     )
     cycle_start_bit = fields.Integer(
         string='Cycle Start Bit (M201)',
@@ -1041,32 +998,18 @@ class PlcWorkstation(models.Model):
     def _get_variant_part_config(self, variant):
         """
         Return part configuration dictionary for the requested variant.
-        Variant should be 'at' or 'mt'. Falls back to default values.
+        Only ROWA variant is supported.
         """
         self.ensure_one()
-        variant = (variant or 'mt').lower()
-        if variant not in ('at', 'mt', 'rowaa'):
-            variant = 'mt'
+        variant = (variant or 'rowaa').lower()
+        if variant != 'rowaa':
+            variant = 'rowaa'
 
-        if variant == 'at':
-            return {
-                'part_name': self.part_name_at or self.part_name_mt or 'BRAKE-AT',
-                'part_no': self.part_no_at or self.part_no or '',
-                'revision': self.revision_at or self.revision or '',
-                'vendor_code': self.vendor_code_at or self.vendor_code or '',
-            }
-        if variant == 'rowaa':
-            return {
-                'part_name': self.part_name_rowaa or 'BRAKE-ROWAA',
-                'part_no': self.part_no_rowaa or self.part_no or '',
-                'revision': self.revision_rowaa or self.revision or '',
-                'vendor_code': self.vendor_code_rowaa or self.vendor_code or '',
-            }
         return {
-            'part_name': self.part_name_mt or self.part_name_at or self.part_name_rowaa or 'BRAKE-MT',
-            'part_no': self.part_no_mt or self.part_no_rowaa or self.part_no or '',
-            'revision': self.revision_mt or self.revision_rowaa or self.revision or '',
-            'vendor_code': self.vendor_code_mt or self.vendor_code_rowaa or self.vendor_code or '',
+            'part_name': self.part_name_rowaa or 'BRAKE-ROWAA',
+            'part_no': self.part_no_rowaa or self.part_no or '',
+            'revision': self.revision_rowaa or self.revision or '',
+            'vendor_code': self.vendor_code_rowaa or self.vendor_code or '',
         }
     
     def read_plc_holding_register_float(self, register_address):
@@ -1148,7 +1091,6 @@ class PlcWorkstation(models.Model):
         self.ensure_one()
         cycle_state = {
             'part_presence': False,
-            'part_at': False,
             'cycle_start': False,
             'cycle_complete': False,
             'cycle_ok': False,
@@ -1194,10 +1136,6 @@ class PlcWorkstation(models.Model):
                 if self.part_presence_bit:
                     bit_addresses.append(self.part_presence_bit)
                     bit_mapping[self.part_presence_bit] = 'part_presence'
-
-                if self.part_at_bit:
-                    bit_addresses.append(self.part_at_bit)
-                    bit_mapping[self.part_at_bit] = 'part_at'
                 
                 if self.cycle_start_bit:
                     bit_addresses.append(self.cycle_start_bit)
@@ -1412,31 +1350,12 @@ class PlcWorkstation(models.Model):
             # Small delay to ensure connection is stable
             time.sleep(0.05)
             
-            # Determine current variant (AT vs MT vs Rowaa) using configured sensor bit (M20)
-            # Read M20 AFTER client is connected. Fallback to workstation default when sensor is absent.
-            variant_type = (self.default_variant_type or 'mt').lower()
-            if variant_type not in ('at', 'mt', 'rowaa'):
-                variant_type = 'mt'
-            if self.part_at_bit:
-                try:
-                    variant_modbus_addr = self.part_at_bit + self.m_bit_address_offset
-                    _logger.info(f"[CYCLE CREATE] Reading AT/MT sensor bit M{self.part_at_bit} (Modbus addr {variant_modbus_addr})")
-                    variant_result = self._read_coils(client, variant_modbus_addr, 1)
-                    if not variant_result.isError() and variant_result.bits:
-                        is_at = bool(variant_result.bits[0])
-                        variant_type = 'at' if is_at else 'mt'
-                        _logger.info(f"[CYCLE CREATE] M{self.part_at_bit} is {'ON' if is_at else 'OFF'} - Variant: {variant_type.upper()}")
-                    else:
-                        error_msg = str(variant_result) if variant_result.isError() else "No bits returned"
-                        _logger.warning(f"[CYCLE CREATE] Unable to read AT/MT sensor (M{self.part_at_bit}) - {error_msg}")
-                        _logger.info(f"[CYCLE CREATE] Falling back to default variant: {variant_type.upper()}")
-                except Exception as variant_error:
-                    _logger.warning(f"[CYCLE CREATE] Exception reading AT/MT sensor bit M{self.part_at_bit}: {variant_error}", exc_info=True)
-                    _logger.info(f"[CYCLE CREATE] Falling back to default variant: {variant_type.upper()}")
-            else:
-                _logger.info(f"[CYCLE CREATE] part_at_bit not configured - using default variant {variant_type.upper()}")
+            # Only ROWA variant is processed
+            variant_type = (self.default_variant_type or 'rowaa').lower()
+            if variant_type != 'rowaa':
+                variant_type = 'rowaa'
             
-            _logger.info(f"[CYCLE CREATE] ✅ Detected variant: {variant_type.upper()}")
+            _logger.info(f"[CYCLE CREATE] ✅ Using ROWA variant")
 
             variant_config = self._get_variant_part_config(variant_type)
             

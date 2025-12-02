@@ -36,11 +36,9 @@ class PlcCycle(models.Model):
         help="Name of the part being processed"
     )
     variant_type = fields.Selection([
-        ('at', 'Brake-AT'),
-        ('mt', 'Brake-MT'),
         ('rowaa', 'Brake-Rowaa'),
     ], string='Variant', default='rowaa',
-        help="Indicates whether the cycle corresponds to the AT, MT, or Rowaa variant")
+        help="Variant type - only ROWA variant is processed")
     barcode = fields.Char(
         string='Barcode',
         required=True,
@@ -211,7 +209,7 @@ class PlcCycle(models.Model):
         if not workstation:
             raise UserError(_("Workstation is required to generate QR code"))
         
-        variant_config = workstation._get_variant_part_config(self.variant_type or 'mt')
+        variant_config = workstation._get_variant_part_config(self.variant_type or 'rowaa')
         part_no = variant_config.get('part_no') or workstation.part_no or ''
         revision = variant_config.get('revision') or workstation.revision or ''
         vendor_code = variant_config.get('vendor_code') or workstation.vendor_code or ''
@@ -505,7 +503,7 @@ class PlcCycle(models.Model):
             serial_no = ''
         else:
             # Get variant-specific configuration based on cycle's variant_type
-            variant_type = self.variant_type or 'mt'
+            variant_type = self.variant_type or 'rowaa'
             variant_config = workstation._get_variant_part_config(variant_type)
             
             # Use variant-specific part configuration
