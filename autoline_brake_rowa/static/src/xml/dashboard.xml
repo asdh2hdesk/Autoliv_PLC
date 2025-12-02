@@ -84,7 +84,7 @@
                                                 <span class="monitoring-status disabled" style="color: #888; font-weight: bold;">○ Inactive</span>
                                             </t>
                                             | Last:
-                                            <t t-esc="workstation.last_connection ? new Date(workstation.last_connection).toLocaleTimeString() : 'Never'"/>
+                                            <t t-esc="workstation.last_connection ? new Date(workstation.last_connection).toISOString().slice(0, 19).replace('T', ' ') : 'Never'"/>
                                             | Cycles:
                                             <t t-esc="workstation.cycle_count || 0"/>
                                         </small>
@@ -253,7 +253,7 @@
                                             </td>
                                             <td>
                                                 <t t-if="cycle.cycle_datetime">
-                                                    <t t-esc="new Date(cycle.cycle_datetime).toLocaleString()"/>
+                                                    <t t-esc="new Date(cycle.cycle_datetime).toISOString().slice(0, 19).replace('T', ' ')"/>
                                                 </t>
                                             </td>
                                             <td t-esc="cycle.torque_nm ? cycle.torque_nm.toFixed(2) : '0.00'"/>
@@ -322,7 +322,7 @@
                                     <tr>
                                         <td>
                                             <t t-if="scan.scan_datetime">
-                                                <t t-esc="new Date(scan.scan_datetime).toLocaleString()"/>
+                                                <t t-esc="new Date(scan.scan_datetime).toISOString().slice(0, 19).replace('T', ' ')"/>
                                             </t>
                                         </td>
                                         <td>

@@ -36,7 +36,7 @@
 <!--                        <button name="test_m_bit_as_discrete_input" string="Test as Discrete Input" type="object" class="btn-secondary"/>-->
 <!--                        <button name="find_m221_address" string="Find M221 Address" type="object" class="btn-secondary"/>-->
 <!--                        <button name="scan_for_active_bits" string="Scan for Active Bits" type="object" class="btn-secondary"/>-->
-                        <button name="continuous_bit_monitor" string="Continuous Monitor (30s)" type="object" class="btn-secondary"/>
+<!--                        <button name="continuous_bit_monitor" string="Continuous Monitor (30s)" type="object" class="btn-secondary"/>-->
                         <button name="start_continuous_monitoring" string="Start Monitoring" type="object" class="btn-success" modifiers="{'invisible': [('monitoring_active', '=', True)]}"/>
                         <button name="stop_continuous_monitoring" string="Stop Monitoring" type="object" class="btn-warning" modifiers="{'invisible': [('monitoring_active', '=', False)]}"/>
                         <field name="connection_status" widget="statusbar" statusbar_visible="connected,disconnected,error"/>
