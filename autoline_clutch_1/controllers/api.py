@@ -501,6 +501,9 @@ class PlcApiController(http.Controller):
             )
             return dashboard_data
             
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting dashboard data via API: {e}")
             return {'error': str(e)}
@@ -511,6 +514,9 @@ class PlcApiController(http.Controller):
         try:
             scans = request.env['dashboard.data'].get_recent_scans(limit=limit)
             return {'scans': scans}
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting recent scans: {e}")
             return {'error': str(e)}
@@ -521,6 +527,9 @@ class PlcApiController(http.Controller):
         try:
             last_cycle = request.env['dashboard.data'].get_last_cycle_info()
             return {'last_cycle': last_cycle}
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting last cycle: {e}")
             return {'error': str(e)}

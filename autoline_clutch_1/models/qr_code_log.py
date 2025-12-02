@@ -14,6 +14,13 @@ class QrCodeLog(models.Model):
     _order = 'scan_datetime desc'
     _rec_name = 'scan_reference'
 
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None):
+        """Override search to check module expiry"""
+        # Check module expiry before allowing access
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
+        return super(QrCodeLog, self).search(domain, offset=offset, limit=limit, order=order)
+
     # Basic Information
     scan_reference = fields.Char(
         string='Scan Reference',

@@ -14,21 +14,29 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/dashboard', type='http', auth='user', website=True)
     def dashboard(self, **kwargs):
         """Main dashboard page"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         return request.render('autoline_clutch_1.dashboard_template', {})
 
     @http.route('/plc/scan', type='http', auth='user', website=True)
     def scan_page(self, **kwargs):
         """QR code scanning page"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         return request.render('autoline_clutch_1.scan_template', {})
 
     @http.route('/plc/monitor', type='http', auth='user', website=True)
     def monitor_page(self, **kwargs):
         """Real-time monitoring page"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         return request.render('autoline_clutch_1.monitor_template', {})
 
     @http.route('/plc/print/<int:cycle_id>', type='http', auth='user', website=True)
     def print_qr_code(self, cycle_id, **kwargs):
         """Print QR code for cycle"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             cycle = request.env['plc.cycle'].browse(cycle_id)
             if not cycle.exists():
@@ -59,6 +67,8 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/scan/process', type='json', auth='user', methods=['POST'])
     def process_scan(self, scanned_data, scanner_id=None, workstation_id=None):
         """Process scanned QR code data"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             result = request.env['qr.code.log'].process_scan(
                 scanned_data=scanned_data,
@@ -66,6 +76,9 @@ class PlcDashboardController(http.Controller):
                 workstation_id=workstation_id
             )
             return result
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error processing scan: {e}")
             return {
@@ -78,12 +91,17 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/dashboard/data', type='json', auth='user', methods=['POST'])
     def get_dashboard_data(self, date_from=None, date_to=None):
         """Get dashboard data via AJAX"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             dashboard_data = request.env['dashboard.data'].get_dashboard_metrics(
                 date_from=date_from,
                 date_to=date_to
             )
             return dashboard_data
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting dashboard data: {e}")
             return {'error': str(e)}
@@ -91,12 +109,17 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/dashboard/hourly', type='json', auth='user', methods=['POST'])
     def get_hourly_data(self, date_from=None, date_to=None):
         """Get hourly data for charts"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             hourly_data = request.env['dashboard.data'].get_hourly_data(
                 date_from=date_from,
                 date_to=date_to
             )
             return hourly_data
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting hourly data: {e}")
             return {'error': str(e)}
@@ -104,12 +127,17 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/dashboard/workstations', type='json', auth='user', methods=['POST'])
     def get_workstation_data(self, date_from=None, date_to=None):
         """Get workstation data"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             workstation_data = request.env['dashboard.data'].get_workstation_data(
                 date_from=date_from,
                 date_to=date_to
             )
             return workstation_data
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting workstation data: {e}")
             return {'error': str(e)}
@@ -117,9 +145,14 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/dashboard/recent', type='json', auth='user', methods=['POST'])
     def get_recent_cycles(self, limit=10):
         """Get recent cycles"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             recent_data = request.env['dashboard.data'].get_recent_cycles(limit=limit)
             return recent_data
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting recent cycles: {e}")
             return {'error': str(e)}
@@ -127,9 +160,14 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/dashboard/alerts', type='json', auth='user', methods=['POST'])
     def get_alerts(self):
         """Get system alerts"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             alerts = request.env['dashboard.data'].get_alerts()
             return alerts
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error getting alerts: {e}")
             return {'error': str(e)}
@@ -137,6 +175,8 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/plc/read', type='json', auth='user', methods=['POST'])
     def read_plc_data(self, workstation_id):
         """Read data from PLC"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             workstation = request.env['plc.workstation'].browse(workstation_id)
             if not workstation.exists():
@@ -155,6 +195,9 @@ class PlcDashboardController(http.Controller):
                     'success': False,
                     'message': _('No cycle data available from PLC')
                 }
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error reading PLC data: {e}")
             return {'error': str(e)}
@@ -162,6 +205,8 @@ class PlcDashboardController(http.Controller):
     @http.route('/plc/plc/test', type='json', auth='user', methods=['POST'])
     def test_plc_connection(self, workstation_id):
         """Test PLC connection"""
+        # Check module expiry
+        request.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             workstation = request.env['plc.workstation'].browse(workstation_id)
             if not workstation.exists():
@@ -172,6 +217,9 @@ class PlcDashboardController(http.Controller):
                 'success': True,
                 'message': _('Connection test completed')
             }
+        except UserError:
+            # Re-raise UserError (expiry errors) so Odoo can show popup
+            raise
         except Exception as e:
             _logger.error(f"Error testing PLC connection: {e}")
             return {'error': str(e)}

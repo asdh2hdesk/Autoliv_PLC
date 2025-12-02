@@ -13,6 +13,13 @@ class DashboardData(models.Model):
     _description = 'Dashboard Data Model'
     _auto = False
 
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None):
+        """Override search to check module expiry"""
+        # Check module expiry before allowing access
+        self.env['autoline_brake_atmt.module_expiry'].check_expiry()
+        return super(DashboardData, self).search(domain, offset=offset, limit=limit, order=order)
+
     # This is a virtual model for dashboard data aggregation
     # It doesn't create actual database tables
 

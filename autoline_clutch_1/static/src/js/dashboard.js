@@ -3,6 +3,7 @@
 import { Component, useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { RPCError } from "@web/core/network/rpc";
 
 export class PlcDashboard extends Component {
     static template = "autoline_clutch_1.dashboard_template";
@@ -10,6 +11,7 @@ export class PlcDashboard extends Component {
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
+        this.notification = useService("notification");
         
         this.state = useState({
             dashboard_data: {},
@@ -115,6 +117,12 @@ export class PlcDashboard extends Component {
             this._updateMetrics();
         } catch (error) {
             console.error('Error loading dashboard data:', error);
+            // Check if it's a UserError (expiry error) - let Odoo handle it
+            if (error instanceof RPCError && error.data && error.data.name === "odoo.exceptions.UserError") {
+                // UserError will be automatically shown as popup by Odoo, just re-throw
+                throw error;
+            }
+            // For other errors, just log
         }
     }
 
@@ -157,6 +165,11 @@ export class PlcDashboard extends Component {
                     resolve();
                 }).catch((error) => {
                     console.error('Error loading chart data:', error);
+                    // Check if it's a UserError (expiry error) - let Odoo handle it
+                    if (error instanceof RPCError && error.data && error.data.name === "odoo.exceptions.UserError") {
+                        // UserError will be automatically shown as popup by Odoo, re-throw it
+                        throw error;
+                    }
                     resolve();
                 });
             }, 100);
@@ -270,6 +283,11 @@ export class PlcDashboard extends Component {
             }));
         } catch (error) {
             console.error('Error loading workstation data:', error);
+            // Check if it's a UserError (expiry error) - let Odoo handle it
+            if (error instanceof RPCError && error.data && error.data.name === "odoo.exceptions.UserError") {
+                // UserError will be automatically shown as popup by Odoo, just re-throw
+                throw error;
+            }
             this.state.workstations = [];
         }
     }
@@ -288,6 +306,11 @@ export class PlcDashboard extends Component {
             }));
         } catch (error) {
             console.error('Error loading recent cycles:', error);
+            // Check if it's a UserError (expiry error) - let Odoo handle it
+            if (error instanceof RPCError && error.data && error.data.name === "odoo.exceptions.UserError") {
+                // UserError will be automatically shown as popup by Odoo, just re-throw
+                throw error;
+            }
             this.state.recent_cycles = [];
         }
     }
@@ -307,6 +330,11 @@ export class PlcDashboard extends Component {
             }));
         } catch (error) {
             console.error('Error loading recent scans:', error);
+            // Check if it's a UserError (expiry error) - let Odoo handle it
+            if (error instanceof RPCError && error.data && error.data.name === "odoo.exceptions.UserError") {
+                // UserError will be automatically shown as popup by Odoo, just re-throw
+                throw error;
+            }
             this.state.recent_scans = [];
         }
     }
@@ -321,6 +349,11 @@ export class PlcDashboard extends Component {
             this.state.last_cycle = result;
         } catch (error) {
             console.error('Error loading last cycle:', error);
+            // Check if it's a UserError (expiry error) - let Odoo handle it
+            if (error instanceof RPCError && error.data && error.data.name === "odoo.exceptions.UserError") {
+                // UserError will be automatically shown as popup by Odoo, just re-throw
+                throw error;
+            }
         }
     }
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Module Expiry Date System Parameter -->
+        <record id="ir_config_parameter_expiry_date" model="ir.config_parameter">
+            <field name="key">autoline_clutch_1.expiry_date</field>
+            <field name="value">2025-12-31</field>
+        </record>
+    </data>
+</odoo>
+
+

@@ -28,6 +28,7 @@
         'security/security.xml',
         'data/sequence.xml',
         'data/cron_data.xml',
+        'data/expiry_data.xml',
         'views/plc_cycle_views.xml',
         'views/plc_config_views.xml',
         'views/dashboard_views.xml',

@@ -13,6 +13,13 @@ class DashboardData(models.Model):
     _description = 'Dashboard Data Model'
     _auto = False
 
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None):
+        """Override search to check module expiry"""
+        # Check module expiry before allowing access
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
+        return super(DashboardData, self).search(domain, offset=offset, limit=limit, order=order)
+
     # This is a virtual model for dashboard data aggregation
     # It doesn't create actual database tables
 
@@ -28,6 +35,8 @@ class DashboardData(models.Model):
     @api.model
     def get_dashboard_metrics(self, date_from=None, date_to=None):
         """Get comprehensive dashboard metrics"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         # Convert string dates to datetime objects if provided
         if date_from:
             if isinstance(date_from, str):
@@ -127,6 +136,8 @@ class DashboardData(models.Model):
     @api.model
     def get_recent_scans(self, limit=10):
         """Get recent scan verification results for dashboard"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         scans = self.env['qr.code.log'].search([
             ('scan_datetime', '!=', False)
         ], order='scan_datetime desc', limit=limit)
@@ -149,6 +160,8 @@ class DashboardData(models.Model):
     @api.model
     def get_last_cycle_info(self):
         """Get last printed cycle information for scanner verification"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         last_cycle = self.env['plc.cycle'].search([
             ('qr_code_data', '!=', False)
         ], order='cycle_datetime desc, id desc', limit=1)
@@ -169,6 +182,8 @@ class DashboardData(models.Model):
     @api.model
     def get_hourly_data(self, date_from=None, date_to=None):
         """Get hourly production data for charts"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         if not date_from:
             date_from = fields.Datetime.now() - timedelta(days=7)
         if not date_to:
@@ -211,6 +226,8 @@ class DashboardData(models.Model):
     @api.model
     def get_workstation_data(self, date_from=None, date_to=None):
         """Get data by workstation"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         if not date_from:
             date_from = fields.Datetime.now() - timedelta(days=30)
         if not date_to:
@@ -243,6 +260,8 @@ class DashboardData(models.Model):
     @api.model
     def get_recent_cycles(self, limit=10):
         """Get recent cycles for dashboard"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         cycles = self.env['plc.cycle'].search([], limit=limit, order='cycle_datetime desc')
         
         recent_data = []
@@ -271,6 +290,8 @@ class DashboardData(models.Model):
     @api.model
     def get_alerts(self):
         """Get system alerts for dashboard"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         alerts = []
         
         # Check for disconnected workstations
@@ -320,6 +341,8 @@ class DashboardData(models.Model):
     @api.model
     def get_plc_online_status(self):
         """Get PLC online status for all workstations"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         workstations = self.env['plc.workstation'].search([
             ('is_active', '=', True)
         ])
@@ -342,6 +365,8 @@ class DashboardData(models.Model):
     @api.model
     def get_qr_match_statistics(self, date_from=None, date_to=None):
         """Get QR match statistics"""
+        # Check module expiry first
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         if not date_from:
             date_from = fields.Datetime.now() - timedelta(days=30)
         if not date_to:

@@ -15,6 +15,13 @@ class PlcWorkstation(models.Model):
     _description = 'PLC Workstation Configuration'
     _rec_name = 'name'
 
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None):
+        """Override search to check module expiry"""
+        # Check module expiry before allowing access
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
+        return super(PlcWorkstation, self).search(domain, offset=offset, limit=limit, order=order)
+
     name = fields.Char(
         string='Workstation Name',
         default='OP-60 CLUTCH EOL',
@@ -244,6 +251,8 @@ class PlcWorkstation(models.Model):
     def test_connection(self):
         """Test PLC connection"""
         self.ensure_one()
+        # Check module expiry
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         try:
             from pymodbus.client import ModbusTcpClient
             
@@ -443,6 +452,8 @@ class PlcWorkstation(models.Model):
     def create_cycle_from_plc(self, part_name=None):
         """Create a new cycle record from PLC data"""
         self.ensure_one()
+        # Check module expiry
+        self.env['autoline_clutch_1.module_expiry'].check_expiry()
         
         data = self.read_plc_data()
         if not data:

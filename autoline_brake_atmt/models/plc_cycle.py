@@ -15,6 +15,13 @@ class PlcCycle(models.Model):
     _order = 'cycle_datetime desc'
     _rec_name = 'cycle_number'
 
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None):
+        """Override search to check module expiry"""
+        # Check module expiry before allowing access - will show popup if expired
+        self.env['autoline_brake_atmt.module_expiry'].check_expiry()
+        return super(PlcCycle, self).search(domain, offset=offset, limit=limit, order=order)
+
     # Basic Information
     cycle_number = fields.Char(
         string='Cycle Number',
@@ -184,6 +191,8 @@ class PlcCycle(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         """Create PLC cycle records with batch support"""
+        # Check module expiry
+        self.env['autoline_brake_atmt.module_expiry'].check_expiry()
         for vals in vals_list:
             if vals.get('cycle_number', _('New')) == _('New'):
                 vals['cycle_number'] = self.env['ir.sequence'].next_by_code('plc.cycle') or _('New')
@@ -569,6 +578,8 @@ class PlcCycle(models.Model):
     def scan_qr_code(self, scanned_data):
         """Process scanned QR code data (new format: 32-char string)"""
         self.ensure_one()
+        # Check module expiry
+        self.env['autoline_brake_atmt.module_expiry'].check_expiry()
         try:
             # New format: scanned_data is a 32-character string
             # Compare directly with qr_code_data
@@ -611,6 +622,8 @@ class PlcCycle(models.Model):
     @api.model
     def get_dashboard_data(self, date_from=None, date_to=None):
         """Get data for dashboard - if no dates provided, shows all data"""
+        # Check module expiry
+        self.env['autoline_brake_atmt.module_expiry'].check_expiry()
         domain = []
         
         # Convert string dates to datetime if provided
