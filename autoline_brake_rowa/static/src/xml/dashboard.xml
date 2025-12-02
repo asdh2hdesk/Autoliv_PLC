@@ -250,6 +250,12 @@
                                     <t t-foreach="state.recent_cycles" t-as="cycle" t-key="cycle_index">
                                         <tr>
                                             <td>
+                                                <span t-if="cycle.variant_type === 'at'" class="badge-custom badge-info">AT</span>
+                                                <span t-elif="cycle.variant_type === 'mt'" class="badge-custom badge-info">MT</span>
+                                                <span t-elif="cycle.variant_type === 'rowaa'" class="badge-custom badge-info">Rowaa</span>
+                                                <span t-else="" class="badge-custom badge-pending">-</span>
+                                            </td>
+                                            <td>
                                                 <div class="text-monospace" t-esc="cycle.qr_code_data || cycle.barcode || ''"/>
                                             </td>
                                             <td>
@@ -257,12 +263,7 @@
                                                     <t t-esc="new Date(cycle.cycle_datetime).toISOString().slice(0, 19).replace('T', ' ')"/>
                                                 </t>
                                             </td>
-                                            <td>
-                                                <span t-if="cycle.variant_type === 'at'" class="badge-custom badge-info">AT</span>
-                                                <span t-elif="cycle.variant_type === 'mt'" class="badge-custom badge-info">MT</span>
-                                                <span t-elif="cycle.variant_type === 'rowaa'" class="badge-custom badge-info">Rowaa</span>
-                                                <span t-else="" class="badge-custom badge-pending">-</span>
-                                            </td>
+
                                             <td t-esc="cycle.torque_nm ? cycle.torque_nm.toFixed(2) : '0.00'"/>
                                             <td t-esc="cycle.initial_position ? cycle.initial_position.toFixed(2) : '0.00'"/>
                                             <td t-esc="cycle.final_position ? cycle.final_position.toFixed(2) : '0.00'"/>
