@@ -169,6 +169,11 @@ class PlcWorkstation(models.Model):
         default=2712,
         help="D register address for final position (D2706)"
     )
+    load_cell_value_register = fields.Integer(
+        string='Load Cell Value Register (D710)',
+        default=710,
+        help="D register address for load cell value (D710)"
+    )
     
     # Zebra Printer Configuration
     printer_type = fields.Selection([
@@ -1373,6 +1378,26 @@ class PlcWorkstation(models.Model):
                     _logger.error(f"[CYCLE CREATE] Exception reading final_position from D{self.final_position_register_clutch}: {e}", exc_info=True)
                     data['final_position'] = 0.0
             
+            # Read load_cell_value from D710 - use raw register value directly
+            if self.load_cell_value_register:
+                try:
+                    _logger.info(f"[CYCLE CREATE] Reading load_cell_value from D register {self.load_cell_value_register}")
+                    result = self._read_holding_registers(client, self.load_cell_value_register, 1)
+                    if not result.isError() and result.registers:
+                        # Use the raw register value directly (no float conversion)
+                        data['load_cell_value'] = float(result.registers[0])
+                        _logger.info(f"[CYCLE CREATE] D{self.load_cell_value_register} raw register value: {result.registers[0]}, load_cell_value: {data['load_cell_value']}")
+                    else:
+                        error_msg = str(result) if result.isError() else "No registers returned"
+                        _logger.warning(f"[CYCLE CREATE] Error reading load_cell_value from D{self.load_cell_value_register}: {error_msg}")
+                        data['load_cell_value'] = 0.0
+                    time.sleep(0.02)
+                except Exception as e:
+                    _logger.error(f"[CYCLE CREATE] Exception reading load_cell_value from D{self.load_cell_value_register}: {e}", exc_info=True)
+                    data['load_cell_value'] = 0.0
+            else:
+                data['load_cell_value'] = 0.0
+            
             # Set default values for CLUTCH
             data['zero_position'] = 0.0
             data['initial_position'] = 0.0
@@ -1410,6 +1435,7 @@ class PlcWorkstation(models.Model):
             _logger.info(f"[CYCLE CREATE] S1_FOR (D{self.s1_for_register}): {data.get('s1_for', 0.0)}")
             _logger.info(f"[CYCLE CREATE] S2_FOR (D{self.s2_for_register}): {data.get('s2_for', 0.0)}")
             _logger.info(f"[CYCLE CREATE] final_position (D{self.final_position_register_clutch}): {data.get('final_position', 0.0)}")
+            _logger.info(f"[CYCLE CREATE] load_cell_value (D{self.load_cell_value_register}): {data.get('load_cell_value', 0.0)}")
             _logger.info(f"[CYCLE CREATE] cycle_time: {data.get('cycle_time', 0.0)}")
             _logger.info(f"[CYCLE CREATE] ===================================")
             
@@ -1425,6 +1451,7 @@ class PlcWorkstation(models.Model):
                 's2_rev': data.get('s2_rev', 0.0),
                 's1_rev': data.get('s1_rev', 0.0),
                 'initial_position_revload': data.get('initial_position_revload', 0.0),
+                'load_cell_value': data.get('load_cell_value', 0.0),
                 'cycle_time': data.get('cycle_time', 0.0),
                 'result': 'ok',  # Will be set based on cycle_ok or cycle_nok
                 'workstation_id': self.id,
@@ -2084,6 +2111,7 @@ class PlcWorkstation(models.Model):
                 ('S1_FOR', self.s1_for_register, 'D2704'),
                 ('S2_FOR', self.s2_for_register, 'D2708'),
                 ('final_position', self.final_position_register_clutch, 'D2706'),
+                ('load_cell_value', self.load_cell_value_register, 'D710'),
             ]
             
             # Try importing BinaryPayloadDecoder

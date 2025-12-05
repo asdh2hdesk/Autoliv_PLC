@@ -277,6 +277,7 @@ class DashboardData(models.Model):
                 's1_for': cycle.s1_for,
                 's2_for': cycle.s2_for,
                 'final_position': cycle.final_position,
+                'load_cell_value': cycle.load_cell_value,
                 'cycle_time': cycle.cycle_time,
                 'qr_printed': cycle.qr_code_printed,
                 'qr_scanned': cycle.qr_code_scanned,

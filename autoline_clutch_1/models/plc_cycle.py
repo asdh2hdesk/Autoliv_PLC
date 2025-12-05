@@ -108,6 +108,11 @@ class PlcCycle(models.Model):
         default=0.0,
         help="Initial position reverse load (for future use)"
     )
+    load_cell_value = fields.Float(
+        string='Load Cell Value',
+        digits=(10, 3),
+        help="Load cell value from D710"
+    )
     
     # QR Code Match Status
     qr_match_status = fields.Selection([

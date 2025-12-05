@@ -240,6 +240,7 @@
                                         <th>S1_FOR</th>
                                         <th>S2_FOR</th>
                                         <th>Final Position</th>
+                                        <th>Load Cell Value</th>
                                         <th>Cycle Time</th>
                                         <th>Result</th>
                                         <th>QR Printed</th>
@@ -262,6 +263,7 @@
                                             <td t-esc="cycle.s1_for ? cycle.s1_for.toFixed(2) : '0.00'"/>
                                             <td t-esc="cycle.s2_for ? cycle.s2_for.toFixed(2) : '0.00'"/>
                                             <td t-esc="cycle.final_position ? cycle.final_position.toFixed(2) : '0.00'"/>
+                                            <td t-esc="cycle.load_cell_value ? cycle.load_cell_value.toFixed(2) : '0.00'"/>
                                             <td t-esc="cycle.cycle_time ? cycle.cycle_time.toFixed(2) : '0.00'"/>
                                             <td>
                                                 <span t-att-class="cycle.result === 'ok' ? 'badge-custom badge-ok' : cycle.result === 'nok' ? 'badge-custom badge-nok' : 'badge-custom badge-pending'">
@@ -295,7 +297,7 @@
                                     </t>
                                     <t t-if="!state.recent_cycles || state.recent_cycles.length === 0">
                                         <tr>
-                                            <td colspan="13" class="text-center text-muted">No cycles yet</td>
+                                            <td colspan="14" class="text-center text-muted">No cycles yet</td>
                                         </tr>
                                     </t>
                                 </tbody>
