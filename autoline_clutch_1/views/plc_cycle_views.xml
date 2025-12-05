@@ -15,6 +15,7 @@
                     <field name="torque_nm"/>
                     <field name="s1_for"/>
                     <field name="s2_for"/>
+                    <field name="load_cell_value"/>
                     <field name="final_position"/>
                     <field name="cycle_time"/>
                     <field name="result" widget="badge"/>
@@ -68,7 +69,7 @@
                                 <field name="zero_position"/>
                                 <field name="s1_for"/>
                                 <field name="s2_for"/>
-<!--                                <field name="s2_rev"/>-->
+                                <field name="load_cell_value"/>
 <!--                                <field name="s1_rev"/>-->
                             </group>
                             <group>

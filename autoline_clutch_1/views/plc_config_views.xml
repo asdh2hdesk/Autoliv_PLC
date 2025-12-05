@@ -95,6 +95,7 @@
                                     <group>
                                         <field name="s1_for_register" readonly="1"/>
                                         <field name="s2_for_register" readonly="1"/>
+                                        <field name="load_cell_value_register" readonly="1"/>
                                         <field name="final_position_register_clutch" readonly="1"/>
                                     </group>
                                 </group>
