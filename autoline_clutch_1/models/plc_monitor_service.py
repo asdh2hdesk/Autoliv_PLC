@@ -27,6 +27,7 @@ class PLCMonitorService:
                     cls._instance.stop_events = {}  # Dictionary of workstation_id -> stop event
                     cls._instance.monitor_locks = {}  # Dictionary of workstation_id -> lock
                     cls._instance.last_states = {}  # Dictionary of workstation_id -> last PLC state
+                    cls._instance.last_cycle_events = {}  # Dictionary of workstation_id -> timestamp of last cycle creation
         return cls._instance
     
     def start_monitoring(self, db_name, workstation_id):
@@ -90,6 +91,9 @@ class PLCMonitorService:
             
             if workstation_id in self.last_states:
                 del self.last_states[workstation_id]
+            
+            if workstation_id in self.last_cycle_events:
+                del self.last_cycle_events[workstation_id]
             
             _logger.info(f"Stopped PLC monitoring for workstation {workstation_id}")
             return True
@@ -190,7 +194,6 @@ class PLCMonitorService:
                             if workstation.part_presence_bit:
                                 bit_summary.append(f"M{workstation.part_presence_bit}={cycle_state.get('part_presence', False)}")
                             bit_summary.append(f"M{workstation.cycle_start_bit}={cycle_state.get('cycle_start', False)}")
-                            bit_summary.append(f"M{workstation.cycle_complete_bit}={cycle_state.get('cycle_complete', False)}")
                             bit_summary.append(f"M{workstation.cycle_ok_bit}={cycle_state.get('cycle_ok', False)}")
                             bit_summary.append(f"M{workstation.cycle_nok_bit}={cycle_state.get('cycle_nok', False)}")
                             _logger.info(f"[MONITORING ACTIVE] Workstation {workstation_id}: {', '.join(bit_summary)}")
@@ -204,29 +207,16 @@ class PLCMonitorService:
                             # Get last state for comparison
                             last_state = self.last_states.get(workstation_id, {})
                             
-                            # Monitor cycle_ok_bit (M221 or M2000 - configured in workstation)
-                            # When cycle_ok_bit turns ON, read D registers and create cycle
-                            # Fallback: If M2000 is not accessible, use M222 (cycle_complete) as alternative
+                            # Monitor ONLY cycle_ok_bit (M2000 - 5-second hold bit)
+                            # When M2000 turns ON, read D registers and create cycle
+                            # Only depend on M2000 for accurate cycle detection
                             current_cycle_ok = cycle_state.get('cycle_ok', False)
-                            current_cycle_complete = cycle_state.get('cycle_complete', False)
                             last_cycle_ok = last_state.get('cycle_ok')
-                            last_cycle_complete = last_state.get('cycle_complete')
-                            
-                            # Check if M2000 is not accessible (always False due to read error)
-                            # If cycle_ok_bit is M2000 and always False, but cycle_complete is readable, use fallback
-                            use_fallback = False
-                            if workstation.cycle_ok_bit == 2000:
-                                # M2000 might not be accessible - check if we should use M222 as fallback
-                                # Use fallback if: cycle_complete is ON and cycle_ok is False (likely due to read error)
-                                if current_cycle_complete and not current_cycle_ok:
-                                    use_fallback = True
-                                    _logger.warning(f"[MONITOR] ⚠️ Workstation {workstation_id}: M2000 not accessible, using M222 (cycle_complete) as fallback for cycle detection")
                             
                             # Log cycle_ok status (every read for cycle_ok_bit to catch it quickly)
                             if current_cycle_ok:
-                                _logger.info(f"[MONITOR] ⚠️ Workstation {workstation_id}: cycle_ok_bit (M{workstation.cycle_ok_bit}) is ON!")
-                            elif use_fallback and current_cycle_complete:
-                                _logger.info(f"[MONITOR] ⚠️ Workstation {workstation_id}: Using M222 (cycle_complete) as cycle OK indicator (M2000 not accessible)")
+                                cycle_ok_bit_num = workstation.cycle_ok_bit or 221
+                                _logger.info(f"[MONITOR] Workstation {workstation_id}: cycle_ok_bit (M{cycle_ok_bit_num}) is ON!")
                             
                             # Log full cycle_state for debugging (less frequently)
                             if int(time.time()) % 30 == 0:
@@ -235,12 +225,11 @@ class PLCMonitorService:
                             
                             # If last_state is None (first read), initialize it and skip cycle creation
                             # This prevents creating a cycle if cycle_ok_bit is already ON when monitoring starts
-                            if last_cycle_ok is None or last_cycle_complete is None:
+                            if last_cycle_ok is None:
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
-                                _logger.info(f"[MONITOR] Initializing monitoring for workstation {workstation_id}: M{cycle_ok_bit_num}={current_cycle_ok}, M222={current_cycle_complete}")
+                                _logger.info(f"[MONITOR] Initializing monitoring for workstation {workstation_id}: M{cycle_ok_bit_num}={current_cycle_ok}")
                                 self.last_states[workstation_id] = {
-                                    'cycle_ok': current_cycle_ok,
-                                    'cycle_complete': current_cycle_complete
+                                    'cycle_ok': current_cycle_ok
                                 }
                                 # Skip cycle creation on first read
                                 cr.commit()
@@ -252,34 +241,43 @@ class PLCMonitorService:
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
                                 _logger.info(f"[MONITOR] Workstation {workstation_id}: M{cycle_ok_bit_num}={current_cycle_ok}, Last M{cycle_ok_bit_num}={last_cycle_ok}, Type check: current={type(current_cycle_ok)}, last={type(last_cycle_ok)}")
                             
-                            # Detect rising edge on cycle_ok_bit (M221 or M2000 - configured in workstation)
+                            # Detect rising edge ONLY on cycle_ok_bit (M2000 - 5-second hold bit)
                             # M2000 is a 5-second hold bit, so it stays ON longer for reliable detection
-                            # Fallback: If M2000 not accessible, use M222 (cycle_complete) rising edge
-                            # Trigger if cycle_ok_bit is ON and was OFF (rising edge), OR if using fallback and cycle_complete is ON
+                            # Only trigger if M2000 is ON and was OFF (rising edge)
                             rising_edge_detected = False
                             trigger_reason = ""
                             
-                            if use_fallback:
-                                # Use cycle_complete as fallback when M2000 is not accessible
-                                if current_cycle_complete and (last_cycle_complete is None or not last_cycle_complete):
-                                    rising_edge_detected = True
-                                    trigger_reason = "M222 (cycle_complete) - M2000 not accessible"
-                                    _logger.info(f"[MONITOR] Rising edge detected on M222 (fallback): current={current_cycle_complete}, last={last_cycle_complete}")
-                            elif current_cycle_ok and not last_cycle_ok:
+                            if current_cycle_ok and not last_cycle_ok:
                                 rising_edge_detected = True
-                                trigger_reason = f"M{workstation.cycle_ok_bit} (cycle_ok_bit)"
                                 cycle_ok_bit_num = workstation.cycle_ok_bit or 221
-                                _logger.info(f"[MONITOR] Rising edge detected: current_cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)}), last_cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)})")
+                                trigger_reason = f"M{cycle_ok_bit_num} (cycle_ok_bit - 5-second hold bit)"
+                                _logger.info(f"[MONITOR] Rising edge detected on M{cycle_ok_bit_num}: current_cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)}), last_cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)})")
                             
                             if rising_edge_detected:
-                                cycle_ok_bit_num = workstation.cycle_ok_bit or 221
-                                _logger.info(f"[CYCLE EVENT] ⚡ {trigger_reason} RISING EDGE detected for workstation {workstation_id}")
-                                if use_fallback:
-                                    _logger.info(f"[CYCLE EVENT] Using M222 (cycle_complete) as cycle OK indicator - creating cycle record...")
-                                elif cycle_ok_bit_num == 2000:
-                                    _logger.info(f"[CYCLE EVENT] M2000 (5-second hold bit) detected - creating cycle record...")
-                                _logger.info(f"[CYCLE EVENT] Last state: cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)}), Current state: cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)})")
-                                _logger.info(f"[CYCLE EVENT] Reading D registers and creating cycle...")
+                                # Guard against duplicate creations caused by noisy bits / connection glitches
+                                min_cycle_interval = 5.0  # Minimum 5 seconds between cycles
+                                now_ts = time.time()
+                                last_cycle_ts = self.last_cycle_events.get(workstation_id)
+                                if last_cycle_ts and (now_ts - last_cycle_ts) < min_cycle_interval:
+                                    cycle_ok_bit_num = workstation.cycle_ok_bit or 221
+                                    _logger.warning(
+                                        "[CYCLE EVENT] ⚠️ Ignoring cycle trigger for workstation %s "
+                                        "because last cycle was created %.2f seconds ago (threshold %.2f s)",
+                                        workstation_id,
+                                        now_ts - last_cycle_ts,
+                                        min_cycle_interval
+                                    )
+                                    rising_edge_detected = False
+                                else:
+                                    self.last_cycle_events[workstation_id] = now_ts
+                                
+                                if rising_edge_detected:
+                                    cycle_ok_bit_num = workstation.cycle_ok_bit or 221
+                                    _logger.info(f"[CYCLE EVENT] ⚡ {trigger_reason} RISING EDGE detected for workstation {workstation_id}")
+                                    if cycle_ok_bit_num == 2000:
+                                        _logger.info(f"[CYCLE EVENT] M2000 (5-second hold bit) detected - creating cycle record...")
+                                    _logger.info(f"[CYCLE EVENT] Last state: cycle_ok={last_cycle_ok} (type: {type(last_cycle_ok)}), Current state: cycle_ok={current_cycle_ok} (type: {type(current_cycle_ok)})")
+                                    _logger.info(f"[CYCLE EVENT] Reading D registers and creating cycle...")
                                 
                                 # Read all measurement data and create cycle record
                                 try:
@@ -338,9 +336,9 @@ class PLCMonitorService:
                             
                             # Update last state AFTER processing
                             # This ensures we capture the state change correctly
+                            # Only track cycle_ok (M2000) - no longer tracking cycle_complete
                             self.last_states[workstation_id] = {
-                                'cycle_ok': bool(current_cycle_ok),
-                                'cycle_complete': bool(current_cycle_complete)
+                                'cycle_ok': bool(current_cycle_ok)
                             }
                             
                             # If cycle_ok_bit is ON but was already ON, log occasionally

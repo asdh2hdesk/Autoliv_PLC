@@ -84,7 +84,7 @@
                                                 <span class="monitoring-status disabled" style="color: #888; font-weight: bold;">○ Inactive</span>
                                             </t>
                                             | Last:
-                                            <t t-esc="workstation.last_connection ? new Date(workstation.last_connection).toISOString().slice(0, 19).replace('T', ' ') : 'Never'"/>
+                                            <t t-esc="workstation.last_connection ? (function() { var d = new Date(workstation.last_connection); var year = d.getFullYear(); var month = ('0' + (d.getMonth() + 1)).slice(-2); var day = ('0' + d.getDate()).slice(-2); var hours = ('0' + d.getHours()).slice(-2); var minutes = ('0' + d.getMinutes()).slice(-2); var seconds = ('0' + d.getSeconds()).slice(-2); return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds; })() : 'Never'"/>
                                             | Cycles:
                                             <t t-esc="workstation.cycle_count || 0"/>
                                         </small>
