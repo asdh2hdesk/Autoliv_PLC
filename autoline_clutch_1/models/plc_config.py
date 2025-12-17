@@ -1378,17 +1378,17 @@ class PlcWorkstation(models.Model):
                     _logger.error(f"[CYCLE CREATE] Exception reading final_position from D{self.final_position_register_clutch}: {e}", exc_info=True)
                     data['final_position'] = 0.0
             
-            # Read load_cell_value from D710 - use raw register value directly
+            # Read load_cell_value from D710 - read as float (2 registers required for 32-bit float)
             if self.load_cell_value_register:
                 try:
-                    _logger.info(f"[CYCLE CREATE] Reading load_cell_value from D register {self.load_cell_value_register}")
-                    result = self._read_holding_registers(client, self.load_cell_value_register, 1)
-                    if not result.isError() and result.registers:
-                        # Use the raw register value directly (no float conversion)
-                        data['load_cell_value'] = float(result.registers[0])
-                        _logger.info(f"[CYCLE CREATE] D{self.load_cell_value_register} raw register value: {result.registers[0]}, load_cell_value: {data['load_cell_value']}")
+                    _logger.info(f"[CYCLE CREATE] Reading load_cell_value from D register {self.load_cell_value_register} as float (2 registers)")
+                    result = self._read_holding_registers(client, self.load_cell_value_register, 2)
+                    if not result.isError() and result.registers and len(result.registers) >= 2:
+                        # Decode as 32-bit float from two 16-bit registers
+                        data['load_cell_value'] = self._decode_float_from_registers(result.registers, 'big')
+                        _logger.info(f"[CYCLE CREATE] D{self.load_cell_value_register} registers: {result.registers}, load_cell_value (decoded float): {data['load_cell_value']}")
                     else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
+                        error_msg = str(result) if result.isError() else "No registers returned or insufficient registers"
                         _logger.warning(f"[CYCLE CREATE] Error reading load_cell_value from D{self.load_cell_value_register}: {error_msg}")
                         data['load_cell_value'] = 0.0
                     time.sleep(0.02)
@@ -2135,19 +2135,36 @@ class PlcWorkstation(models.Model):
                     continue
                 
                 try:
-                    # Read single register (16-bit value) - use raw value directly
-                    result = self._read_holding_registers(client, reg_addr, 1)
-                    if not result.isError() and result.registers:
-                        raw_val = result.registers[0]
-                        results.append(f"\n{name} ({reg_name}, address {reg_addr}):")
-                        results.append(f"  Raw register value: {raw_val}")
-                        results.append(f"  Actual value (no conversion): {float(raw_val)}")
-                        
-                        if raw_val == 0:
-                            results.append(f"  ⚠️ Value is zero - check if register has data in PLC")
+                    # load_cell_value is a float (requires 2 registers), others are single register values
+                    if name == 'load_cell_value':
+                        # Read 2 registers for float value
+                        result = self._read_holding_registers(client, reg_addr, 2)
+                        if not result.isError() and result.registers and len(result.registers) >= 2:
+                            raw_registers = result.registers
+                            float_val = self._decode_float_from_registers(raw_registers, 'big')
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}):")
+                            results.append(f"  Raw registers: {raw_registers}")
+                            results.append(f"  Decoded float value: {float_val}")
+                            
+                            if float_val == 0.0:
+                                results.append(f"  ⚠️ Value is zero - check if register has data in PLC")
+                        else:
+                            error_msg = str(result) if result.isError() else "No registers returned or insufficient registers"
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Error: {error_msg}")
                     else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Error: {error_msg}")
+                        # Read single register (16-bit value) - use raw value directly
+                        result = self._read_holding_registers(client, reg_addr, 1)
+                        if not result.isError() and result.registers:
+                            raw_val = result.registers[0]
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}):")
+                            results.append(f"  Raw register value: {raw_val}")
+                            results.append(f"  Actual value (no conversion): {float(raw_val)}")
+                            
+                            if raw_val == 0:
+                                results.append(f"  ⚠️ Value is zero - check if register has data in PLC")
+                        else:
+                            error_msg = str(result) if result.isError() else "No registers returned"
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Error: {error_msg}")
                 except Exception as e:
                     results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Exception: {e}")
                 

@@ -1407,21 +1407,34 @@ class PlcWorkstation(models.Model):
 
             variant_config = self._get_variant_part_config(variant_type)
             
-            # Helper to read single register and store as float
+            # Helper to read register values
             def _read_single_register(field_key, register_address, label):
                 if not register_address:
                     data[field_key] = 0.0
                     return
                 try:
                     _logger.info(f"[CYCLE CREATE] Reading {label} from D register {register_address}")
-                    result = self._read_holding_registers(client, register_address, 1)
-                    if not result.isError() and result.registers:
-                        data[field_key] = float(result.registers[0])
-                        _logger.info(f"[CYCLE CREATE] D{register_address} raw value: {result.registers[0]} ({label}: {data[field_key]})")
+                    
+                    # load_cell_value is a 32-bit float -> needs 2 registers
+                    if field_key == 'load_cell_value':
+                        result = self._read_holding_registers(client, register_address, 2)
+                        if not result.isError() and result.registers and len(result.registers) >= 2:
+                            data[field_key] = self._decode_float_from_registers(result.registers, 'big')
+                            _logger.info(f"[CYCLE CREATE] D{register_address} registers: {result.registers} ({label}: {data[field_key]})")
+                        else:
+                            error_msg = str(result) if result.isError() else "No registers returned or insufficient registers"
+                            _logger.warning(f"[CYCLE CREATE] Error reading {label} from D{register_address}: {error_msg}")
+                            data[field_key] = 0.0
                     else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        _logger.warning(f"[CYCLE CREATE] Error reading {label} from D{register_address}: {error_msg}")
-                        data[field_key] = 0.0
+                        result = self._read_holding_registers(client, register_address, 1)
+                        if not result.isError() and result.registers:
+                            data[field_key] = float(result.registers[0])
+                            _logger.info(f"[CYCLE CREATE] D{register_address} raw value: {result.registers[0]} ({label}: {data[field_key]})")
+                        else:
+                            error_msg = str(result) if result.isError() else "No registers returned"
+                            _logger.warning(f"[CYCLE CREATE] Error reading {label} from D{register_address}: {error_msg}")
+                            data[field_key] = 0.0
+                    
                     time.sleep(0.02)
                 except Exception as read_error:
                     _logger.error(f"[CYCLE CREATE] Exception reading {label} from D{register_address}: {read_error}", exc_info=True)
@@ -2146,19 +2159,34 @@ class PlcWorkstation(models.Model):
                     continue
                 
                 try:
-                    # Read single register (16-bit value) - use raw value directly
-                    result = self._read_holding_registers(client, reg_addr, 1)
-                    if not result.isError() and result.registers:
-                        raw_val = result.registers[0]
-                        results.append(f"\n{name} ({reg_name}, address {reg_addr}):")
-                        results.append(f"  Raw register value: {raw_val}")
-                        results.append(f"  Actual value (no conversion): {float(raw_val)}")
-                        
-                        if raw_val == 0:
-                            results.append(f"  ⚠️ Value is zero - check if register has data in PLC")
+                    # Load Cell is a 32-bit float (needs 2 registers); others are single 16-bit values
+                    if name == 'Load Cell':
+                        result = self._read_holding_registers(client, reg_addr, 2)
+                        if not result.isError() and result.registers and len(result.registers) >= 2:
+                            raw_registers = result.registers
+                            float_val = self._decode_float_from_registers(raw_registers, 'big')
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}):")
+                            results.append(f"  Raw registers: {raw_registers}")
+                            results.append(f"  Decoded float value: {float_val}")
+                            if float_val == 0.0:
+                                results.append(f"  ⚠️ Value is zero - check if register has data in PLC")
+                        else:
+                            error_msg = str(result) if result.isError() else "No registers returned or insufficient registers"
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Error: {error_msg}")
                     else:
-                        error_msg = str(result) if result.isError() else "No registers returned"
-                        results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Error: {error_msg}")
+                        # Read single register (16-bit value) - use raw value directly
+                        result = self._read_holding_registers(client, reg_addr, 1)
+                        if not result.isError() and result.registers:
+                            raw_val = result.registers[0]
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}):")
+                            results.append(f"  Raw register value: {raw_val}")
+                            results.append(f"  Actual value (no conversion): {float(raw_val)}")
+                            
+                            if raw_val == 0:
+                                results.append(f"  ⚠️ Value is zero - check if register has data in PLC")
+                        else:
+                            error_msg = str(result) if result.isError() else "No registers returned"
+                            results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Error: {error_msg}")
                 except Exception as e:
                     results.append(f"\n{name} ({reg_name}, address {reg_addr}): ❌ Exception: {e}")
                 
